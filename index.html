@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Kidza - Attendance Management System</title>
+<style>
+:root{
+  --pink:#e8194b;--pink2:#c41040;--psoft:#ffeef3;--plight:#fff0f4;
+  --bg:#f5f6fa;--card:#fff;--ink:#1a1d2e;--ink2:#4a4f6a;--muted:#8b90aa;
+  --line:#e4e7f0;--bg2:#eef0f7;
+  --green:#16a34a;--amber:#d97706;--red:#dc2626;--blue:#2563eb;--teal:#0891b2;--purple:#7c3aed;
+  --r:13px;--rs:8px;--sh:0 2px 10px rgba(232,25,75,.07);--shm:0 6px 24px rgba(232,25,75,.12);
+}
+[data-theme=dark]{--bg:#0f1117;--card:#1e2130;--ink:#e8eaf4;--ink2:#9aa0be;--muted:#5a6080;--line:#2a2f45;--bg2:#181b26;--psoft:rgba(232,25,75,.15);--plight:rgba(232,25,75,.08);--sh:0 2px 10px rgba(0,0,0,.3);--shm:0 6px 24px rgba(0,0,0,.4)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);font-size:14px;transition:background .2s,color .2s}
+button,input,select,textarea{font-family:inherit;outline:none}
+button{cursor:pointer;border:none}
+button:active{opacity:.82;transform:scale(.97)}
+::-webkit-scrollbar{display:none}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.screen{display:none;flex-direction:column;height:100%;overflow:hidden}
+.screen.active{display:flex}
+.topbar{background:var(--card);border-bottom:1.5px solid var(--line);padding:0 14px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:20;transition:background .2s}
+.tb-brand{display:flex;align-items:center;gap:9px;cursor:pointer}
+.tb-logo{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.tb-logo img{width:100%;height:100%;object-fit:cover;display:block}
+.tb-logo-t{font-size:19px;font-weight:900;color:#e8194b;line-height:1}
+.tb-name{font-size:15px;font-weight:800;color:var(--pink);letter-spacing:-.3px}
+.tb-sub{font-size:9px;color:var(--muted);font-weight:500}
+.tb-right{display:flex;align-items:center;gap:5px}
+.ib{width:36px;height:36px;border-radius:9px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;flex-shrink:0;position:relative}
+.ib:active{background:var(--line)}
+.ndot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--card);display:none}
+.av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0}
+.page{display:none;flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.page.active{display:block}
+.pad{padding:14px}
+.padt{padding:14px 14px 80px}
+.bnav{background:var(--card);border-top:1.5px solid var(--line);display:flex;flex-shrink:0;height:60px;padding-bottom:env(safe-area-inset-bottom);transition:background .2s}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:9.5px;font-weight:700;color:var(--muted);cursor:pointer;position:relative;transition:color .15s;padding:4px 2px;letter-spacing:.02em;text-transform:uppercase}
+.bn.active{color:var(--pink)}
+.bni{font-size:20px;line-height:1;transition:transform .2s}
+.bn.active .bni{transform:scale(1.1)}
+.bnd{position:absolute;top:5px;right:calc(50% - 14px);min-width:16px;height:16px;background:var(--red);color:#fff;font-size:9px;font-weight:800;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px}
+.bnd.on{display:flex}
+.card{background:var(--card);border-radius:var(--r);padding:15px;box-shadow:var(--sh);margin-bottom:11px;transition:background .2s}
+.chdr{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
+.sg2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px}
+.sg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:11px}
+.sg4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-bottom:11px}
+.st{background:var(--card);border-radius:var(--r);padding:13px 11px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:3px;transition:background .2s}
+.sv{font-size:22px;font-weight:900;line-height:1;color:var(--ink)}
+.sl{font-size:9.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.st.pink .sv{color:var(--pink)}.st.green .sv{color:var(--green)}.st.amber .sv{color:var(--amber)}
+.st.red .sv{color:var(--red)}.st.blue .sv{color:var(--blue)}.st.teal .sv{color:var(--teal)}.st.purple .sv{color:var(--purple)}
+.lr{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+.lr:last-child{border:none;padding-bottom:0}
+.lrl{flex:1;min-width:0}
+.lrt{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrs{font-size:11px;color:var(--muted);line-height:1.5}
+.lrr{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.pp{background:var(--psoft);color:var(--pink)}.pg{background:#dcfce7;color:#15803d}.pa{background:#fef3c7;color:#92400e}
+.pr{background:#fee2e2;color:#b91c1c}.pb{background:#dbeafe;color:#1e40af}.pgr{background:var(--bg2);color:var(--muted)}
+.ppu{background:#ede9fe;color:#6d28d9}.pt{background:#cffafe;color:#0e7490}
+[data-theme=dark] .pg{background:rgba(22,163,74,.2);color:#4ade80}
+[data-theme=dark] .pa{background:rgba(217,119,6,.2);color:#fcd34d}
+[data-theme=dark] .pr{background:rgba(220,38,38,.2);color:#fca5a5}
+[data-theme=dark] .pb{background:rgba(37,99,235,.2);color:#93c5fd}
+[data-theme=dark] .pt{background:rgba(8,145,178,.2);color:#67e8f9}
+.fg{margin-bottom:13px}
+.fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink2);margin-bottom:5px;letter-spacing:.02em}
+.fi{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:var(--rs);font-size:13.5px;color:var(--ink);background:var(--bg);transition:border-color .2s,background .2s}
+.fi:focus{border-color:var(--pink);background:var(--card)}
+.fi::placeholder{color:var(--muted)}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%238b90aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+textarea.fi{resize:vertical;min-height:72px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 18px;border-radius:var(--rs);font-size:13.5px;font-weight:700;cursor:pointer;border:none;transition:opacity .15s,transform .1s}
+.btn:active{opacity:.82;transform:scale(.97)}
+.btnp{background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;width:100%;box-shadow:0 4px 14px rgba(232,25,75,.28)}
+.btng{background:var(--green);color:#fff}
+.btnr{background:var(--red);color:#fff}
+.btnw{background:var(--amber);color:#fff}
+.btno{background:var(--bg2);color:var(--ink2);border:1.5px solid var(--line)}
+.btnb{background:var(--blue);color:#fff}
+.btnsm{padding:6px 12px;font-size:11.5px;border-radius:6px}
+.btnbl{width:100%}
+.btngr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mcal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.mch{font-size:9px;font-weight:800;color:var(--muted);padding:4px 0;text-transform:uppercase}
+.mcd{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;background:var(--bg2);color:var(--ink2);cursor:default;position:relative}
+.mcd.td{border:2px solid var(--pink)}
+.mcd.P{background:#dcfce7;color:#15803d}.mcd.A{background:#fee2e2;color:#b91c1c}
+.mcd.L{background:#cffafe;color:#0e7490}.mcd.HD{background:#fef3c7;color:#92400e}
+.mcd.WO{background:var(--bg2);color:var(--muted)}.mcd.LATE{background:#fef9c3;color:#78350f}
+.mcd.REG{background:#ede9fe;color:#6d28d9}.mcd.tap{cursor:pointer}
+.mcd.tap::after{content:'↑';position:absolute;bottom:0;right:1px;font-size:7px;color:var(--pink);opacity:.7}
+.mcd.empty{background:transparent;cursor:default}
+.phero{display:flex;flex-direction:column;align-items:center;padding:28px 16px 16px}
+.pclock{font-size:42px;font-weight:900;color:var(--ink);letter-spacing:-1.5px;font-variant-numeric:tabular-nums}
+.pdate{font-size:13px;color:var(--muted);margin-bottom:24px}
+.pring{width:190px;height:190px;border-radius:50%;background:var(--card);box-shadow:0 0 0 12px var(--plight),var(--shm);display:flex;align-items:center;justify-content:center;margin-bottom:22px;transition:background .2s}
+.pbtn{width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-size:13.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:0 8px 28px rgba(232,25,75,.38);border:none;transition:all .2s}
+.pbtn.out{background:linear-gradient(135deg,#16a34a,#166534);box-shadow:0 8px 28px rgba(22,163,74,.38)}
+.pbtn.done{background:linear-gradient(135deg,#64748b,#475569);box-shadow:none;opacity:.7}
+.pbico{font-size:36px;line-height:1}
+.prow{display:flex;align-items:center;gap:8px;margin-top:4px}
+.pdot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.pdot.g{background:var(--green)}.pdot.r{background:var(--red)}.pdot.a{background:var(--amber)}
+.sprow{display:flex;gap:7px;overflow-x:auto;padding:2px 0 8px}
+.sp{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg2);color:var(--ink2);border:1.5px solid var(--line);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.sp.sel{background:var(--pink);color:#fff;border-color:var(--pink)}
+.bbwrap{margin-top:6px}
+.bbrow{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.bbtrack{height:7px;border-radius:4px;background:var(--line);overflow:hidden}
+.bbfill{height:100%;border-radius:4px;background:var(--pink);transition:width .6s}
+.cr{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg2);color:var(--ink2);border:1.5px solid var(--line);cursor:pointer;transition:all .13s}
+.chip.sel,.chip:active{background:var(--pink);color:#fff;border-color:var(--pink)}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}
+.ov.open{display:flex}
+.sheet{background:var(--card);border-radius:22px 22px 0 0;padding:18px 18px calc(26px + env(safe-area-inset-bottom));width:100%;max-height:90vh;overflow-y:auto;animation:su .22s ease;transition:background .2s}
+.sh{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 16px}
+.stit{font-size:16.5px;font-weight:800;color:var(--ink);margin-bottom:15px}
+@keyframes su{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.fp{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column;overflow:hidden;transition:background .2s}
+.fp.open{display:flex}
+.fptop{background:var(--card);border-bottom:1.5px solid var(--line);padding:0 14px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;transition:background .2s}
+.fptit{font-size:16px;font-weight:700;color:var(--ink)}
+.fpsc{flex:1;overflow-y:auto;padding:14px}
+.fpsc::-webkit-scrollbar{display:none}
+#sl{background:var(--bg);align-items:center;justify-content:center;padding:28px 20px}
+.lhero{text-align:center;margin-bottom:32px}
+.llogo{width:90px;height:90px;border-radius:20px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:var(--shm)}
+.llogo img{width:100%;height:100%;object-fit:cover;display:block}
+.llot{font-size:38px;font-weight:900;color:#e8194b}
+.lbrand{font-size:26px;font-weight:900;color:var(--pink);letter-spacing:-.5px}
+.ltag{font-size:12.5px;color:var(--muted);margin-top:4px}
+.lcard{background:var(--card);border-radius:20px;padding:22px;width:100%;max-width:380px;box-shadow:var(--shm);transition:background .2s}
+.lhead{font-size:17px;font-weight:800;color:var(--ink);margin-bottom:18px}
+.lhint{font-size:12px;color:var(--muted);text-align:center;margin-top:11px}
+.lhint a{color:var(--pink);font-weight:700;cursor:pointer}
+#pino{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+#pino.open{display:flex}
+.pinbox{background:var(--card);border-radius:20px;padding:26px 22px;width:290px;text-align:center;transition:background .2s}
+.pinti{font-size:15px;font-weight:800;color:var(--pink);margin-bottom:4px}
+.pinsu{font-size:11.5px;color:var(--muted);margin-bottom:18px}
+.pindots{display:flex;justify-content:center;gap:10px;margin-bottom:18px}
+.pd2{width:13px;height:13px;border-radius:50%;background:var(--line);transition:background .15s}
+.pd2.on{background:var(--pink)}
+.pinpad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.pk{height:52px;border-radius:10px;background:var(--bg2);font-size:19px;font-weight:700;color:var(--ink);cursor:pointer;border:none;transition:background .1s}
+.pk:active{background:var(--pink);color:#fff}
+.wdots{display:flex;gap:5px;justify-content:center;margin-bottom:20px}
+.wd{width:8px;height:8px;border-radius:50%;background:var(--line);transition:all .2s}
+.wd.on{background:var(--pink);width:22px;border-radius:4px}
+.tt{width:46px;height:25px;border-radius:13px;background:var(--line);position:relative;cursor:pointer;transition:background .25s;border:none}
+.tt.on{background:var(--pink)}
+.tk{width:19px;height:19px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:transform .25s;display:flex;align-items:center;justify-content:center;font-size:10px}
+.tt.on .tk{transform:translateX(21px)}
+.sbar{display:flex;align-items:center;background:var(--bg2);border-radius:var(--rs);padding:0 12px;gap:8px;margin-bottom:11px;border:1.5px solid var(--line)}
+.sbar input{flex:1;border:none;background:transparent;padding:10px 0;font-size:13px;color:var(--ink)}
+.sbar input::placeholder{color:var(--muted)}
+.tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.tbl th{background:var(--bg2);color:var(--muted);font-weight:700;text-transform:uppercase;font-size:9.5px;letter-spacing:.06em;padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--line)}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--ink)}
+.sbrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.sbrow:last-child{border:none}
+.sec{font-size:12.5px;font-weight:800;color:var(--ink);margin:14px 0 9px}
+.es{text-align:center;padding:36px 16px;color:var(--muted)}
+.ei{font-size:38px;margin-bottom:8px}
+.dvdr{border:none;border-top:1px solid var(--line);margin:11px 0}
+.fb{display:flex;justify-content:space-between;align-items:center}
+.fc{display:flex;align-items:center;gap:7px}
+.tc{text-align:center}
+.tm{color:var(--muted)}
+.ts{font-size:11.5px}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}
+.spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .65s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.fade{animation:fd .28s ease}
+@keyframes fd{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+#toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:rgba(26,29,46,.92);color:#fff;padding:10px 20px;border-radius:22px;font-size:12.5px;font-weight:600;z-index:999;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap;max-width:92vw;text-align:center;backdrop-filter:blur(4px)}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+<!-- LOGIN -->
+<div id="sl" class="screen active">
+  <div class="lhero">
+    <div class="llogo"><img src="data:image/jpeg;base64,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" alt="Kidza"></div>
+    <div class="lbrand"></div>
+    <div class="ltag">Attendance Management System</div>
+    <div style="margin-top:10px"><button class="tt" id="ltt" onclick="toggleTheme()"><div class="tk">☀️</div></button></div>
+  </div>
+  <div class="lcard">
+    <div class="lhead">Welcome back 👋</div>
+    <div class="fg"><label class="fl">Employee Code</label><input id="leid" class="fi" placeholder="EMP001" autocapitalize="characters" autocomplete="username"></div>
+    <div class="fg"><label class="fl">Password</label><input id="lpass" type="password" class="fi" placeholder="Your password" autocomplete="current-password"></div>
+    <button class="btn btnp" id="lbtn" onclick="doLogin()">Sign In</button>
+    <div class="lhint" id="lhint" style="display:none">First time? <a onclick="showWizard()">Setup admin →</a></div>
+    <div class="lhint"><a onclick="openSheet('shfgt')" style="color:var(--muted)">Forgot password?</a></div>
+  </div>
+</div>
+<!-- MAIN APP -->
+<div id="sa" class="screen">
+  <div class="topbar">
+    <div class="tb-brand" onclick="logoTap()">
+      <div class="tb-logo"><img src="data:image/jpeg;base64,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" alt="Kidza"></div>
+      <div><div class="tb-name">Kidza</div><div class="tb-sub">Attendance System</div></div>
+    </div>
+    <div class="tb-right">
+      <div class="ib" onclick="toggleTheme()">🌗</div>
+      <div class="ib" onclick="showNotifs()" id="nbtn"><span>🔔</span><div class="ndot" id="ndot"></div></div>
+      <div class="av" id="topav" onclick="goPage('profile')">?</div>
+    </div>
+  </div>
+  <div id="pgd" class="page active"></div>
+  <div id="pga" class="page"></div>
+  <div id="pgl" class="page"></div>
+  <div id="pgp" class="page"></div>
+  <div id="pgm" class="page"></div>
+  <div class="bnav">
+    <div class="bn active" id="bnd" onclick="goPage('dash')"><div class="bni">🏠</div><div>Home</div></div>
+    <div class="bn" id="bna" onclick="goPage('attend')"><div class="bni">📍</div><div>Attend</div><div class="bnd" id="bnda">0</div></div>
+    <div class="bn" id="bnl" onclick="goPage('leave')"><div class="bni">📅</div><div>Leave</div><div class="bnd" id="bndl">0</div></div>
+    <div class="bn" id="bnp" onclick="goPage('payroll')"><div class="bni">💰</div><div>Payroll</div></div>
+    <div class="bn" id="bnm" onclick="goPage('profile')"><div class="bni">👤</div><div>Me</div></div>
+  </div>
+</div>
+</div>
+<!-- ADMIN PIN -->
+<div id="pino">
+  <div class="pinbox">
+    <div style="font-size:30px;margin-bottom:8px">🔐</div>
+    <div class="pinti">Admin Access</div>
+    <div class="pinsu">Enter 4-digit secret PIN</div>
+    <div class="pindots" id="pindots"><div class="pd2"></div><div class="pd2"></div><div class="pd2"></div><div class="pd2"></div></div>
+    <div class="pinpad">
+      <button class="pk" onclick="pk('1')">1</button><button class="pk" onclick="pk('2')">2</button><button class="pk" onclick="pk('3')">3</button>
+      <button class="pk" onclick="pk('4')">4</button><button class="pk" onclick="pk('5')">5</button><button class="pk" onclick="pk('6')">6</button>
+      <button class="pk" onclick="pk('7')">7</button><button class="pk" onclick="pk('8')">8</button><button class="pk" onclick="pk('9')">9</button>
+      <button class="pk" onclick="pk('C')" style="font-size:13px">CLR</button><button class="pk" onclick="pk('0')">0</button><button class="pk" onclick="pk('<')" style="font-size:14px">⌫</button>
+    </div>
+    <button class="btn btno btnbl btnsm mt12" onclick="closePin()">Cancel</button>
+  </div>
+</div>
+<!-- SETUP WIZARD -->
+<div class="fp" id="fpset">
+  <div class="fptop"><div class="fptit">⚙️ First-Time Setup</div></div>
+  <div class="fpsc"><div class="wdots" id="wdots"></div><div id="wbody"></div></div>
+</div>
+<!-- ADD/EDIT EMPLOYEE -->
+<div class="fp" id="fpemp">
+  <div class="fptop"><div class="fptit" id="fpetit">Add Employee</div><div class="ib" onclick="closeFP('fpemp')">✕</div></div>
+  <div class="fpsc">
+    <div class="card">
+      <div class="fr2">
+        <div class="fg"><label class="fl">Employee Code *</label><input id="ec" class="fi" placeholder="EMP001" autocapitalize="characters"></div>
+        <div class="fg"><label class="fl">Full Name *</label><input id="en" class="fi" placeholder="Full name"></div>
+      </div>
+      <div class="fg"><label class="fl">Mobile *</label><input id="em" type="tel" class="fi" placeholder="9999999999"></div>
+      <div class="fg"><label class="fl">Email</label><input id="ee" type="email" class="fi" placeholder="name@email.com"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Designation</label><input id="ed" class="fi" placeholder="Sales Executive"></div>
+        <div class="fg"><label class="fl">Department</label><input id="ept" class="fi" placeholder="Sales"></div>
+      </div>
+      <div class="fg"><label class="fl">Store / Branch *</label><select id="est" class="fi"></select></div>
+      <div class="fg"><label class="fl">Reporting Manager</label><select id="ermgr" class="fi"><option value="">None</option></select></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Date of Joining</label><input id="edoj" type="date" class="fi"></div>
+        <div class="fg"><label class="fl">Birthday</label><input id="edob" type="date" class="fi"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Salary (₹/month) *</label><input id="esal" type="number" class="fi" placeholder="25000"></div>
+        <div class="fg"><label class="fl">Role *</label>
+          <select id="erole" class="fi"><option value="staff">Staff</option><option value="manager">Manager</option><option value="admin">Admin/HR</option></select>
+        </div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Shift</label>
+          <select id="eshift" class="fi"><option value="general">General 9:30–6:30</option><option value="morning">Morning 8–5</option><option value="afternoon">Afternoon 2–11</option><option value="night">Night 10PM–7AM</option></select>
+        </div>
+        <div class="fg"><label class="fl">Week Off</label>
+          <select id="ewoff" class="fi"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="6">Saturday</option></select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Password *</label><input id="epass" type="password" class="fi" placeholder="Set login password"></div>
+      <div class="fg"><label class="fl">L1 Manager</label><select id="el1" class="fi"><option value="">None</option></select></div>
+      <div class="fg"><label class="fl">L2 Manager</label><select id="el2" class="fi"><option value="">None</option></select></div>
+    </div>
+    <button class="btn btnp btnbl" id="sebtn" onclick="saveEmployee()" style="margin-bottom:30px">Save Employee</button>
+  </div>
+</div>
+<!-- SALARY SLIP -->
+<div class="fp" id="fpslip">
+  <div class="fptop">
+    <div class="fptit">Salary Slip</div>
+    <div style="display:flex;gap:6px"><button class="btn btnb btnsm" onclick="printSlip()">🖨 Print</button><div class="ib" onclick="closeFP('fpslip')">✕</div></div>
+  </div>
+  <div class="fpsc" id="slipbody"></div>
+</div>
+<!-- AUDIT LOG -->
+<div class="fp" id="fpaudit">
+  <div class="fptop"><div class="fptit">📋 Audit Log</div><div class="ib" onclick="closeFP('fpaudit')">✕</div></div>
+  <div class="fpsc" id="auditbody"></div>
+</div>
+<!-- MANAGE STORES -->
+<div class="fp" id="fpstores">
+  <div class="fptop"><div class="fptit">📍 Store Locations</div><div class="ib" onclick="closeFP('fpstores')">✕</div></div>
+  <div class="fpsc">
+    <div class="card" id="storelist"></div>
+    <div class="card">
+      <div class="chdr">Add New Store</div>
+      <div class="fg"><label class="fl">Store Name *</label><input id="stn" class="fi" placeholder="Kidza Anna Nagar"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Latitude *</label><input id="stlat" type="number" step="0.0001" class="fi" placeholder="13.0843"></div>
+        <div class="fg"><label class="fl">Longitude *</label><input id="stlon" type="number" step="0.0001" class="fi" placeholder="80.2100"></div>
+      </div>
+      <div class="fg"><label class="fl">Radius (metres)</label><input id="strad" type="number" class="fi" value="100"></div>
+      <button class="btn btnp btnbl" onclick="addStore()">+ Add Store</button>
+    </div>
+    <p class="tc tm ts" style="padding:8px 0 24px">Tip: Google Maps → Long-press store → Copy coordinates</p>
+  </div>
+</div>
+<!-- EMPLOYEE LIST -->
+<div class="fp" id="fpemps">
+  <div class="fptop">
+    <div class="fptit">👥 All Employees</div>
+    <div style="display:flex;gap:6px"><button class="btn btnp btnsm" onclick="openAddEmp(null)">+ Add</button><div class="ib" onclick="closeFP('fpemps')">✕</div></div>
+  </div>
+  <div class="fpsc">
+    <div class="sbar"><span>🔍</span><input id="esrch" placeholder="Search name or code…" oninput="filterEmps()"></div>
+    <div id="emplistbody"></div>
+    <button class="btn btno btnbl mt8" onclick="openFP('fpbulk')">📤 Bulk Upload (Excel)</button>
+  </div>
+</div>
+<!-- BULK UPLOAD -->
+<div class="fp" id="fpbulk">
+  <div class="fptop"><div class="fptit">📤 Bulk Upload</div><div class="ib" onclick="closeFP('fpbulk')">✕</div></div>
+  <div class="fpsc">
+    <div class="card">
+      <div class="chdr">Upload Employee Excel</div>
+      <p class="tm ts mb12">Required columns: Code, Name, Mobile, Email, Designation, Department, Store, Role, Salary, Shift, WeekOff, DOJ, DOB</p>
+      <input type="file" id="bulkfile" accept=".xlsx,.xls,.csv" class="fi" style="padding:8px">
+      <button class="btn btnp btnbl mt8" onclick="processBulk()">Import Employees</button>
+    </div>
+    <div id="bulkresult"></div>
+    <div class="card mt12">
+      <div class="chdr">Download Template</div>
+      <button class="btn btno btnbl" onclick="dlTemplate()">⬇ Download Excel Template</button>
+    </div>
+  </div>
+</div>
+<!-- TEAM ATTENDANCE -->
+<div class="fp" id="fpteam">
+  <div class="fptop"><div class="fptit">👥 Team Attendance</div><div class="ib" onclick="closeFP('fpteam')">✕</div></div>
+  <div class="fpsc">
+    <div class="fg" style="margin-bottom:11px"><input type="month" id="tmo" class="fi" onchange="loadTeamAtt()"></div>
+    <div id="teambody"></div>
+  </div>
+</div>
+<!-- REGULARIZE SHEET -->
+<div class="ov" id="shreg">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">Request Regularization</div>
+    <p class="tm ts mb12" id="reginfo"></p>
+    <div class="fg"><label class="fl">Reason *</label><textarea id="regreason" class="fi" placeholder="Why should this day be marked Present?"></textarea></div>
+    <div class="btngr"><button class="btn btno" onclick="closeSheet('shreg')">Cancel</button><button class="btn btnp" onclick="submitReg()">Submit</button></div>
+  </div>
+</div>
+<!-- APPROVE REG -->
+<div class="ov" id="shregap">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">Regularization Request</div>
+    <div id="regapdet"></div>
+    <div class="fg mt12"><label class="fl">Remark</label><input id="regaprk" class="fi" placeholder="Optional note…"></div>
+    <div class="btngr mt8"><button class="btn btnr" onclick="actReg('REJECT')">Reject</button><button class="btn btng" onclick="actReg('APPROVE')">Approve</button></div>
+    <button class="btn btno btnbl btnsm mt8" onclick="closeSheet('shregap')">Cancel</button>
+  </div>
+</div>
+<!-- LEAVE APPLY -->
+<div class="ov" id="shlva">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">Apply for Leave</div>
+    <div class="fg"><label class="fl">Leave Type</label>
+      <select id="lvtype" class="fi" onchange="onLvType()">
+        <option value="APL">APL — All Purpose Leave (Earned)</option>
+        <option value="CL">CL — Casual Leave</option>
+        <option value="SL">SL — Sick Leave</option>
+        <option value="EL">EL — Earned Leave</option>
+        <option value="LWP">LWP — Leave Without Pay</option>
+      </select>
+    </div>
+    <div id="aplbalbox" class="card" style="padding:10px 13px;margin-bottom:13px">
+      <div class="fb"><span class="ts">APL Balance</span><span id="aplbaln" style="font-weight:800;color:var(--pink);font-size:14px">0 days</span></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">From *</label><input type="date" id="lvfrom" class="fi"></div>
+      <div class="fg"><label class="fl">To *</label><input type="date" id="lvto" class="fi"></div>
+    </div>
+    <div class="fg"><label class="fl">Half Day?</label>
+      <div class="cr"><div class="chip sel" id="cfd" onclick="setHD(false)">Full Day</div><div class="chip" id="chd" onclick="setHD(true)">Half Day</div></div>
+    </div>
+    <div class="fg"><label class="fl">Reason *</label><input id="lvreason" class="fi" placeholder="Brief reason…"></div>
+    <div class="btngr"><button class="btn btno" onclick="closeSheet('shlva')">Cancel</button><button class="btn btnp" onclick="submitLeave()">Apply</button></div>
+  </div>
+</div>
+<!-- APPROVE LEAVE -->
+<div class="ov" id="shlvap">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">Leave Request</div>
+    <div id="lvapdet"></div>
+    <div class="fg mt12"><label class="fl">Remark</label><input id="lvaprk" class="fi" placeholder="Optional note…"></div>
+    <div class="btngr mt8"><button class="btn btnr" onclick="actLeave('REJECT')">Reject</button><button class="btn btng" onclick="actLeave('APPROVE')">Approve</button></div>
+    <button class="btn btno btnbl btnsm mt8" onclick="closeSheet('shlvap')">Cancel</button>
+  </div>
+</div>
+<!-- MANAGER EDIT ATT -->
+<div class="ov" id="shmgr">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">Edit Attendance</div>
+    <p class="tm ts mb12" id="mgreinfo"></p>
+    <div class="fg"><label class="fl">Set Status</label>
+      <div class="cr" id="stcr">
+        <div class="chip" onclick="selSt('P')">✅ Present</div>
+        <div class="chip" onclick="selSt('A')">❌ Absent</div>
+        <div class="chip" onclick="selSt('HD')">🌓 Half Day</div>
+        <div class="chip" onclick="selSt('L')">🏖 Leave</div>
+        <div class="chip" onclick="selSt('WO')">😴 Week Off</div>
+        <div class="chip" onclick="selSt('LATE')">⏰ Late</div>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Reason</label><input id="mgreason" class="fi" placeholder="Reason for change…"></div>
+    <div class="btngr"><button class="btn btno" onclick="closeSheet('shmgr')">Cancel</button><button class="btn btnp" onclick="saveMgrEdit()">Save</button></div>
+  </div>
+</div>
+<!-- ROSTER -->
+<div class="ov" id="shrst">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">Assign Shift Roster</div>
+    <div class="fg"><label class="fl">Employee</label><select id="rstemp" class="fi"></select></div>
+    <div class="fg"><label class="fl">Week Starting</label><input type="date" id="rstweek" class="fi"></div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">Shift</label>
+        <select id="rstshift" class="fi"><option value="general">General 9:30–6:30</option><option value="morning">Morning 8–5</option><option value="afternoon">Afternoon 2–11</option><option value="night">Night 10PM–7AM</option></select>
+      </div>
+      <div class="fg"><label class="fl">Week Off</label>
+        <select id="rstwoff" class="fi"><option value="0">Sunday</option><option value="1">Monday</option><option value="6">Saturday</option></select>
+      </div>
+    </div>
+    <div class="btngr"><button class="btn btno" onclick="closeSheet('shrst')">Cancel</button><button class="btn btnp" onclick="saveRoster()">Assign</button></div>
+  </div>
+</div>
+<!-- NOTIFICATIONS -->
+<div class="ov" id="shnotif">
+  <div class="sheet"><div class="sh"></div><div class="stit">🔔 Notifications</div><div id="notifbody"></div></div>
+</div>
+<!-- REPORTS -->
+<div class="ov" id="shrpt">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">📊 Reports & Export</div>
+    <div class="fg"><label class="fl">Select Month</label><input type="month" id="rptmo" class="fi"></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btno btnbl" onclick="exportRpt('daily')">📅 Daily Attendance Report</button>
+      <button class="btn btno btnbl" onclick="exportRpt('monthly')">📆 Monthly Attendance Report</button>
+      <button class="btn btno btnbl" onclick="exportRpt('leave')">🏖 Leave Report</button>
+      <button class="btn btno btnbl" onclick="exportRpt('payroll')">💰 Payroll Report</button>
+      <button class="btn btno btnbl" onclick="exportRpt('overtime')">⏰ Overtime Report</button>
+    </div>
+    <button class="btn btno btnbl btnsm mt12" onclick="closeSheet('shrpt')">Close</button>
+  </div>
+</div>
+<!-- FORGOT PASSWORD -->
+<div class="ov" id="shfgt">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">Forgot Password</div>
+    <p class="tm ts mb12">Contact your HR or Admin to reset password. They can update it from Employee Management.</p>
+    <div class="fg"><label class="fl">Your Employee Code</label><input id="fgteid" class="fi" placeholder="EMP001" autocapitalize="characters"></div>
+    <button class="btn btnp btnbl" onclick="submitFgt()">Submit Request</button>
+    <button class="btn btno btnbl btnsm mt8" onclick="closeSheet('shfgt')">Cancel</button>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ══════════════════════════════════════════
+   CONFIGURATION — EDIT THESE VALUES ONLY
+══════════════════════════════════════════ */
+const ADMIN_PIN="7391"; // Change this 4-digit PIN — only you know it
+
+// GPS Store Locations — edit with your real coordinates
+// Find GPS: Open Google Maps → Long-press your store → copy coords
+const DEFAULT_STORES=[
+  {id:"s1",name:"Kidza KATTUR",    lat:10.7967,lon:78.7565,radius:100},
+  {id:"s2",name:"Kidza CUMBUM",     lat:9.7477,lon:77.2869,radius:100},
+  {id:"s3",name:"Kidza MG TRADERS",        lat:78.6840,lon:78.6840,radius:100},
+  {id:"s4",name:"Kidza THENI",     lat:10.0201,lon:77.4799,radius:100},
+  {id:"s5",name:"Kidza DINDIGUL",       lat:12.9249,lon:80.1000,radius:100},
+  // Add more: {id:"s6",name:"Kidza Branch 6",lat:0,lon:0,radius:100}
+];
+
+// Firebase config — paste from Firebase console
+const FBC={
+  apiKey:"REPLACE_apiKey",
+  authDomain:"REPLACE.firebaseapp.com",
+  databaseURL:"https://REPLACE-default-rtdb.firebaseio.com",
+  projectId:"REPLACE_projectId",
+  storageBucket:"REPLACE.appspot.com",
+  messagingSenderId:"REPLACE_senderId",
+  appId:"REPLACE_appId"
+};
+
+/* ══════════════════════════════════════════ CONSTANTS */
+const SHIFTS={
+  general:{label:"General",start:"09:30",end:"18:30"},
+  morning:{label:"Morning",start:"08:00",end:"17:00"},
+  afternoon:{label:"Afternoon",start:"14:00",end:"23:00"},
+  night:{label:"Night",start:"22:00",end:"07:00"}
+};
+const SHRS=9,LGRACE=15,LLATE=60,WORK_DAYS=26,APL_CREDIT=2,LATE_AB=3;
+const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* ══════════════════════════════════════════ STATE */
+let CU=null,stores=[],isDark=false;
+let ltaps=0,ltimer=null,pinbuf='';
+let pReg=null,pRegK=null,pLvK=null;
+let eEmpId=null,mgrEmpId=null,mgrDate=null,mgrSt=null;
+let isHD=false,allEmps=[],filtEmps=[];
+
+/* ══════════════════════════════════════════ FIREBASE + LOCALSTORAGE */
+let db=null;
+function initFB(){
+  try{
+    if(!window.firebase)return false;
+    if(!firebase.apps.length)firebase.initializeApp(FBC);
+    db=firebase.database();return true;
+  }catch(e){return false;}
+}
+async function dbGet(p){
+  if(db){const s=await db.ref(p).once('value');return s.exists()?s.val():null;}
+  const v=localStorage.getItem('ka_'+p);return v?JSON.parse(v):null;
+}
+async function dbSet(p,d){
+  if(db)return db.ref(p).set(d);
+  localStorage.setItem('ka_'+p,JSON.stringify(d));
+}
+async function dbUpd(p,d){
+  if(db)return db.ref(p).update(d);
+  const ex=await dbGet(p)||{};localStorage.setItem('ka_'+p,JSON.stringify({...ex,...d}));
+}
+async function dbPush(p,d){
+  if(db)return db.ref(p).push(d);
+  const ex=await dbGet(p)||{};const k='k'+Date.now();ex[k]=d;localStorage.setItem('ka_'+p,JSON.stringify(ex));return{key:k};
+}
+async function dbDel(p){
+  if(db)return db.ref(p).remove();
+  localStorage.removeItem('ka_'+p);
+}
+
+/* ══════════════════════════════════════════ UTILS */
+const today=()=>new Date().toISOString().slice(0,10);
+const nowT=()=>new Date().toTimeString().slice(0,8);
+const ini=(n)=>(n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const hp=(s)=>{let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)+s.charCodeAt(i);return(h>>>0).toString(16)};
+function hv(a,b){const R=6371000,dL=(b.lat-a.lat)*Math.PI/180,dl=(b.lon-a.lon)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dl/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+const fD=(d)=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const fT=(t)=>{if(!t)return'—';const[h,m]=t.split(':');const hr=parseInt(h);return`${hr>12?hr-12:hr||12}:${m}${hr>=12?'PM':'AM'}`};
+const wdB=(f,t)=>{let d=new Date(f+'T00:00:00'),e=new Date(t+'T00:00:00'),c=0;while(d<=e){if(d.getDay()!==0)c++;d.setDate(d.getDate()+1)}return c};
+const hrsB=(a,b)=>{if(!a||!b)return 0;const p=s=>{const[h,m,sc='0']=s.split(':').map(Number);return h*3600+m*60+sc};let d=p(b)-p(a);if(d<0)d+=86400;return d/3600};
+const mL=(pt,ss)=>{const[h1,m1]=ss.split(':').map(Number);const[h2,m2]=pt.split(':').map(Number);return(h2*60+m2)-(h1*60+m1)};
+function cSt(pt,sk){const s=SHIFTS[sk]||SHIFTS.general;const m=mL(pt,s.start);if(m<=0||m<=LGRACE)return'P';if(m<=LLATE)return'LATE';return'HD';}
+function spill(s){const m={P:'pg',A:'pr',L:'pt',HD:'pa',WO:'pgr',LATE:'pa',REG:'ppu'};const l={P:'Present',A:'Absent',L:'Leave',HD:'Half Day',WO:'Week Off',LATE:'Late',REG:'Regularized'};return`<span class="pill ${m[s]||'pgr'}">${l[s]||s}</span>`;}
+function rpill(r){const m={staff:'pgr',manager:'pb',admin:'pp'};const l={staff:'Staff',manager:'Manager',admin:'Admin'};return`<span class="pill ${m[r]||'pgr'}">${l[r]||r}</span>`;}
+function toast(msg,dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+function openSheet(id){document.getElementById(id).classList.add('open');}
+function closeSheet(id){document.getElementById(id).classList.remove('open');}
+function openFP(id){document.getElementById(id).classList.add('open');}
+function closeFP(id){document.getElementById(id).classList.remove('open');}
+const cAdmin=r=>r==='admin';
+const cMgr=r=>['admin','manager'].includes(r);
+const cAppr=r=>['admin','manager'].includes(r);
+
+/* ══════════════════════════════════════════ THEME */
+function toggleTheme(){
+  isDark=!isDark;
+  document.body.setAttribute('data-theme',isDark?'dark':'');
+  document.querySelectorAll('.tt').forEach(b=>{b.classList.toggle('on',isDark);b.querySelector('.tk').textContent=isDark?'🌙':'☀️';});
+  localStorage.setItem('ka_theme',isDark?'dark':'light');
+}
+function loadTheme(){if(localStorage.getItem('ka_theme')==='dark'){isDark=true;document.body.setAttribute('data-theme','dark');document.querySelectorAll('.tt').forEach(b=>{b.classList.add('on');b.querySelector('.tk').textContent='🌙';});}}
+
+/* ══════════════════════════════════════════ LOGO TAP → ADMIN PIN */
+function logoTap(){ltaps++;clearTimeout(ltimer);ltimer=setTimeout(()=>ltaps=0,1500);if(ltaps>=5){ltaps=0;pinbuf='';updPD();document.getElementById('pino').classList.add('open');}}
+function closePin(){pinbuf='';updPD();document.getElementById('pino').classList.remove('open');}
+function pk(k){
+  if(k==='C')pinbuf='';else if(k==='<')pinbuf=pinbuf.slice(0,-1);else if(pinbuf.length<4)pinbuf+=k;
+  updPD();
+  if(pinbuf.length===4){if(pinbuf===ADMIN_PIN){closePin();openAddEmp(null);toast('🔓 Admin access granted');}else{toast('❌ Wrong PIN');setTimeout(()=>{pinbuf='';updPD();},700);}}
+}
+function updPD(){document.querySelectorAll('.pd2').forEach((d,i)=>d.classList.toggle('on',i<pinbuf.length));}
+
+/* ══════════════════════════════════════════ SETUP WIZARD */
+let wS=0,wD={};
+const wST=['Store Locations','Organization','Admin Account'];
+function showWizard(){wS=0;wD={};renderWiz();openFP('fpset');}
+function renderWiz(){
+  document.getElementById('wdots').innerHTML=wST.map((s,i)=>`<div class="wd ${i===wS?'on':''}"></div>`).join('');
+  let h='';
+  if(wS===0){
+    h=`<div class="card"><div style="font-size:15px;font-weight:800;margin-bottom:8px">📍 Store Locations</div>
+      <p class="tm ts mb12">${DEFAULT_STORES.length} stores pre-loaded. Edit DEFAULT_STORES in HTML to update GPS permanently.</p>
+      ${DEFAULT_STORES.map(s=>`<div class="sbrow"><div><div style="font-weight:600;font-size:12.5px">${s.name}</div><div class="tm ts">${s.lat}, ${s.lon} • ${s.radius}m</div></div><span class="pill pg">✓</span></div>`).join('')}
+      <p class="tm ts mt12">Add/edit stores anytime after login via Admin → Stores.</p></div>`;
+  }else if(wS===1){
+    h=`<div class="card"><div style="font-size:15px;font-weight:800;margin-bottom:8px">🏢 Organization</div>
+      <div class="fg"><label class="fl">Organization Name *</label><input id="worg" class="fi" value="Kidza The Baby Shop"></div>
+      <div class="fg"><label class="fl">City</label><input id="wcity" class="fi" placeholder="Chennai"></div></div>`;
+  }else{
+    h=`<div class="card"><div style="font-size:15px;font-weight:800;margin-bottom:8px">👤 Admin Account</div>
+      <p class="tm ts mb12">⚠️ Private credentials — do NOT share with staff.</p>
+      <div class="fg"><label class="fl">Employee Code *</label><input id="wcode" class="fi" placeholder="ADMIN01" autocapitalize="characters"></div>
+      <div class="fg"><label class="fl">Your Name *</label><input id="wname" class="fi" placeholder="Full name"></div>
+      <div class="fg"><label class="fl">Mobile</label><input id="wmob" type="tel" class="fi" placeholder="9999999999"></div>
+      <div class="fg"><label class="fl">Password *</label><input id="wpass" type="password" class="fi" placeholder="Min 4 characters"></div></div>`;
+  }
+  h+=`<div class="btngr" style="margin-bottom:30px">
+    ${wS>0?`<button class="btn btno" onclick="wBack()">Back</button>`:'<div></div>'}
+    <button class="btn btnp" onclick="wNext()">${wS===2?'Complete Setup →':'Continue'}</button></div>`;
+  document.getElementById('wbody').innerHTML=h;
+}
+async function wNext(){
+  if(wS===0){wD.stores=DEFAULT_STORES;}
+  else if(wS===1){const n=document.getElementById('worg')?.value.trim();if(!n){toast('Org name required');return;}wD.org=n;wD.city=document.getElementById('wcity')?.value.trim();}
+  else{
+    const code=document.getElementById('wcode')?.value.trim().toUpperCase();
+    const name=document.getElementById('wname')?.value.trim();
+    const pass=document.getElementById('wpass')?.value;
+    if(!code||!name||!pass){toast('All fields required');return;}
+    if(pass.length<4){toast('Password too short');return;}
+    const sm={};wD.stores.forEach(s=>sm[s.id]={...s,active:true});
+    await dbSet('config',{orgName:wD.org,city:wD.city||'',setupDone:true});
+    await dbSet('stores',sm);
+    await dbSet(`employees/${code}`,{code,name,mobile:document.getElementById('wmob')?.value.trim(),role:'admin',status:'active',join_date:today(),password_hash:hp(pass),shift:'general',week_off:0,salary:0,assigned_store:Object.keys(sm)[0]||''});
+    await dbPush('audit_log',{action:'SETUP',actor:code,ts:Date.now()});
+    closeFP('fpset');toast('✅ Setup complete! Sign in now.');
+    document.getElementById('leid').value=code;
+    document.getElementById('lhint').style.display='none';
+    return;
+  }
+  wS++;renderWiz();
+}
+function wBack(){if(wS>0){wS--;renderWiz();}}
+
+/* ══════════════════════════════════════════ AUTH */
+async function checkFirst(){const e=await dbGet('employees');if(!e||!Object.keys(e).length)document.getElementById('lhint').style.display='block';}
+async function doLogin(){
+  const eid=document.getElementById('leid').value.trim().toUpperCase();
+  const pass=document.getElementById('lpass').value;
+  if(!eid||!pass){toast('Enter Employee Code and password');return;}
+  const btn=document.getElementById('lbtn');btn.innerHTML='<div class="spin"></div>';btn.disabled=true;
+  try{
+    const emps=await dbGet('employees');
+    if(!emps||!emps[eid]){toast('Employee not found');return;}
+    const e=emps[eid];
+    if(e.status==='inactive'){toast('Account inactive. Contact HR.');return;}
+    if(e.password_hash!==hp(pass)){toast('Wrong password');return;}
+    CU={...e,code:eid};
+    const sd=await dbGet('stores');
+    stores=sd?Object.entries(sd).map(([id,v])=>({...v,id})):DEFAULT_STORES;
+    allEmps=emps?Object.entries(emps).map(([id,v])=>({...v,code:id})):[];
+    launchApp();
+  }catch(e){toast('Error: '+e.message);console.error(e);}
+  finally{btn.innerHTML='Sign In';btn.disabled=false;}
+}
+function doLogout(){if(!confirm('Sign out?'))return;CU=null;allEmps=[];document.getElementById('sa').classList.remove('active');document.getElementById('sl').classList.add('active');document.getElementById('lpass').value='';}
+function launchApp(){document.getElementById('sl').classList.remove('active');document.getElementById('sa').classList.add('active');document.getElementById('topav').textContent=ini(CU.name);goPage('dash');loadBadges();}
+async function submitFgt(){const eid=document.getElementById('fgteid').value.trim().toUpperCase();if(!eid){toast('Enter Employee Code');return;}await dbPush('forgot_requests',{emp_id:eid,requested_on:today(),ts:Date.now()});closeSheet('shfgt');toast('Request submitted. HR will contact you.');}
+
+/* ══════════════════════════════════════════ NAVIGATION */
+function goPage(p){
+  const pages={dash:'pgd',attend:'pga',leave:'pgl',payroll:'pgp',profile:'pgm'};
+  const navs={dash:'bnd',attend:'bna',leave:'bnl',payroll:'bnp',profile:'bnm'};
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.bn').forEach(x=>x.classList.remove('active'));
+  document.getElementById(pages[p]).classList.add('active');
+  document.getElementById(navs[p]).classList.add('active');
+  const r={dash:renderDash,attend:renderAttend,leave:renderLeave,payroll:renderPayroll,profile:renderProfile};
+  if(r[p])r[p]();
+}
+
+/* ══════════════════════════════════════════ DASHBOARD */
+async function renderDash(){
+  const el=document.getElementById('pgd');
+  el.innerHTML=`<div class="pad"><p class="tc tm ts">Loading…</p></div>`;
+  try{
+    const now=new Date(),yr=now.getFullYear(),mo=now.getMonth()+1,moS=`${yr}-${String(mo).padStart(2,'0')}`;
+    const [aD,lvD,rgD,blD,emD,cfD]=await Promise.all([dbGet(`attendance/${CU.code}`),dbGet('leaves'),dbGet('regularizations'),dbGet(`leave_balance/${CU.code}`),dbGet('employees'),dbGet('config')]);
+    const org=cfD?.orgName||'Kidza';
+    let P=0,LA=0,HD=0,L=0,WO=0,A=0,OT=0,durs=[],aMap={};
+    if(aD)Object.entries(aD).forEach(([d,r])=>{aMap[d]=r.status;if(!d.startsWith(moS))return;if(r.status==='P'||r.status==='REG')P++;else if(r.status==='LATE')LA++;else if(r.status==='HD')HD++;else if(r.status==='L')L++;else if(r.status==='WO')WO++;else if(r.status==='A')A++;OT+=parseFloat(r.ot_hours||0);if(r.punch_in&&r.punch_out)durs.push(hrsB(r.punch_in,r.punch_out));});
+    const avgH=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1):'0.0';
+    let apl=0;if(blD){let e=0,u=0;Object.values(blD).forEach(r=>{e+=r.apl_earned||0;u+=r.apl_used||0;});apl=e-u;}
+    let pR=0;if(rgD)pR=Object.values(rgD).filter(r=>r.emp_id===CU.code&&r.status==='PENDING').length;
+    let tP=0,tA=0,tL2=0,tT=0,pLv=0;
+    if(cMgr(CU.role)&&emD){
+      const td=today();const tEmps=Object.entries(emD).filter(([id,e])=>CU.role==='admin'||e.reporting_manager===CU.code);tT=tEmps.length;
+      for(const[id]of tEmps){const ta=await dbGet(`attendance/${id}/${td}`);if(!ta)tA++;else if(ta.status==='P'||ta.status==='REG')tP++;else if(ta.status==='LATE'){tP++;tL2++;}else tA++;}
+      if(lvD)pLv=Object.values(lvD).filter(l=>l.status==='PENDING').length;
+    }
+    let bday='';
+    if(emD){const td2=today().slice(5);const bds=Object.values(emD).filter(e=>e.dob&&e.dob.slice(5)===td2&&e.status!=='inactive');if(bds.length)bday=`<div class="card" style="background:linear-gradient(135deg,#ffeef3,#fde8ef);border:none"><div style="font-size:22px;margin-bottom:4px">🎂</div><div style="font-weight:800;font-size:14px;color:var(--pink)">Birthday Today!</div><div class="tm ts">${bds.map(e=>`${e.name}${e.department?' ('+e.department+')':''}`).join(', ')}</div></div>`;}
+    const dim=new Date(yr,mo,0).getDate(),fd=new Date(yr,mo-1,1).getDay(),tdS=today();
+    let cal=`<div class="mcal">`;['S','M','T','W','T','F','S'].forEach(d=>cal+=`<div class="mch">${d}</div>`);
+    for(let i=0;i<fd;i++)cal+=`<div class="mcd empty"></div>`;
+    for(let d=1;d<=dim;d++){const ds=`${moS}-${String(d).padStart(2,'0')}`;const s=aMap[ds]||'';const it=ds===tdS?'td':'';const tp=['HD','L','WO','A','LATE'].includes(s)?`tap" onclick="openReg('${ds}','${s}')`:'';cal+=`<div class="mcd ${s} ${it} ${tp}">${d}</div>`;}
+    cal+=`</div>`;
+    el.innerHTML=`<div class="padt fade">
+      <div class="fb mb12"><div><div style="font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${org}</div><div style="font-size:16px;font-weight:800">${now.toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</div></div>${pR?`<span class="pill pa">${pR} pending</span>`:''}</div>
+      ${bday}
+      ${cMgr(CU.role)?`<div class="sg4"><div class="st blue"><div class="sv">${tT}</div><div class="sl">Team</div></div><div class="st green"><div class="sv">${tP}</div><div class="sl">Present</div></div><div class="st red"><div class="sv">${tA}</div><div class="sl">Absent</div></div><div class="st amber"><div class="sv">${pLv}</div><div class="sl">Pend.Lv</div></div></div>`:''}
+      <div class="sg2"><div class="st green"><div class="sv">${P+LA}</div><div class="sl">Present</div></div><div class="st teal"><div class="sv">${L}</div><div class="sl">Leave</div></div><div class="st"><div class="sv">${WO}</div><div class="sl">Week Off</div></div><div class="st amber"><div class="sv">${HD}</div><div class="sl">Half Days</div></div></div>
+      <div class="sg2"><div class="st blue"><div class="sv">${avgH}h</div><div class="sl">Avg Hours</div></div><div class="st"><div class="sv">${OT.toFixed(1)}h</div><div class="sl">OT Hours</div></div><div class="st red"><div class="sv">${A}</div><div class="sl">Absent</div></div><div class="st pink"><div class="sv">${apl}</div><div class="sl">APL Left</div></div></div>
+      <div class="card"><div class="fb mb12"><div class="chdr" style="margin:0">Attendance Calendar</div><span class="tm ts">Tap coloured days → Regularize</span></div>${cal}
+        <div class="cr mt8" style="justify-content:center"><span class="pill pg" style="font-size:9.5px">Present</span><span class="pill pr" style="font-size:9.5px">Absent</span><span class="pill pa" style="font-size:9.5px">HD/Late</span><span class="pill pt" style="font-size:9.5px">Leave</span><span class="pill pgr" style="font-size:9.5px">WO</span><span class="pill ppu" style="font-size:9.5px">Reg</span></div>
+      </div>
+      ${cMgr(CU.role)?`<div class="sg3"><button class="btn btnp" style="font-size:11.5px" onclick="openFP('fpemps')">👥 Employees</button><button class="btn btnb" style="font-size:11.5px" onclick="openTeamAtt()">📊 Team</button><button class="btn btno" style="font-size:11.5px" onclick="openSheet('shrpt')">📋 Reports</button></div>`:''}
+      ${cAdmin(CU.role)?`<div class="sg2"><button class="btn btno" onclick="openFP('fpstores');renderStList()">📍 Stores</button><button class="btn btno" onclick="openAudit()">📋 Audit</button></div><button class="btn btnw btnbl" onclick="runAPL()" style="margin-bottom:11px">💰 Run Monthly APL Credit</button>`:''}
+    </div>`;
+  }catch(e){el.innerHTML=`<div class="es"><div class="ei">⚠️</div><p>Failed to load. Check connection.</p></div>`;console.error(e);}
+}
+
+/* ══════════════════════════════════════════ ATTENDANCE */
+let clkInt=null;
+function renderAttend(){
+  const el=document.getElementById('pga');
+  const ms=stores.find(s=>s.id===CU.assigned_store)||stores[0]||null;
+  const pills=stores.map(s=>`<div class="sp${ms&&s.id===ms.id?' sel':''}" onclick="selSt2('${s.id}',this)">${s.name}</div>`).join('');
+  el.innerHTML=`<div class="phero">
+    <div class="pclock" id="pclk">--:--</div><div class="pdate" id="pdt"></div>
+    <div class="pring"><button class="pbtn" id="pbtn" onclick="doPunch()"><div class="pbico">👆</div><div id="pblbl">Punch In</div></button></div>
+    <div class="prow"><div class="pdot" id="pdot"></div><div style="font-size:12.5px;color:var(--ink2)" id="pst">Checking…</div></div>
+  </div>
+  <div class="pad" style="padding-top:0">
+    <div class="card"><div class="chdr">Your Store</div><div class="sprow" id="sprow">${pills}</div><div class="tm ts mt8" id="stinfo"></div></div>
+    <div id="todcard"></div>
+    ${cMgr(CU.role)?`<div class="card mt8"><div class="chdr">Manager Actions</div><div class="sg2"><button class="btn btno" onclick="openTeamAtt()">👥 Team Attendance</button><button class="btn btno" onclick="openRstSheet()">📅 Assign Roster</button></div></div>`:''}
+  </div>`;
+  window._ps=ms;if(ms)document.getElementById('stinfo').textContent=`📍 ${ms.name} • Radius: ${ms.radius}m`;
+  updClk();if(clkInt)clearInterval(clkInt);clkInt=setInterval(updClk,1000);
+  loadTodPunch();
+}
+function selSt2(id,el2){window._ps=stores.find(s=>s.id===id)||null;document.querySelectorAll('.sp').forEach(p=>p.classList.remove('sel'));el2.classList.add('sel');const s=window._ps;if(s)document.getElementById('stinfo').textContent=`📍 ${s.name} • Lat:${s.lat}, Lon:${s.lon} • Radius:${s.radius}m`;}
+function updClk(){const n=new Date();const c=document.getElementById('pclk');if(c)c.textContent=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});const d=document.getElementById('pdt');if(d)d.textContent=n.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});}
+async function loadTodPunch(){
+  const sn=await dbGet(`attendance/${CU.code}/${today()}`);
+  const btn=document.getElementById('pbtn'),dot=document.getElementById('pdot'),st=document.getElementById('pst'),tc=document.getElementById('todcard');
+  if(!btn)return;
+  if(sn){
+    const r=sn;
+    if(r.punch_in&&r.punch_out){btn.className='pbtn done';document.getElementById('pblbl').textContent='Done ✓';btn.disabled=true;dot.className='pdot g';st.textContent=`Punched out at ${fT(r.punch_out)}`;}
+    else if(r.punch_in){btn.className='pbtn out';document.getElementById('pblbl').textContent='Punch Out';dot.className='pdot g';st.innerHTML=`In at ${fT(r.punch_in)} ${spill(r.status)}`;}
+    tc.innerHTML=`<div class="card"><div class="chdr">Today's Record</div>
+      <div class="lr"><div class="lrl"><div class="lrt">Punch In</div></div><div class="lrr"><strong>${fT(r.punch_in)||'—'}</strong></div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Punch Out</div></div><div class="lrr"><strong>${fT(r.punch_out)||'—'}</strong></div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Status</div></div><div class="lrr">${spill(r.status)}</div></div>
+      ${r.punch_in&&r.punch_out?`<div class="lr"><div class="lrl"><div class="lrt">Hours Worked</div></div><div class="lrr"><strong>${hrsB(r.punch_in,r.punch_out).toFixed(2)}h</strong></div></div>`:''}
+      ${(r.ot_hours||0)>0?`<div class="lr"><div class="lrl"><div class="lrt">OT Hours</div></div><div class="lrr"><strong style="color:var(--green)">${r.ot_hours}h</strong></div></div>`:''}
+      ${r.store_name?`<div class="lr"><div class="lrl"><div class="lrt">Store</div></div><div class="lrr">${r.store_name}</div></div>`:''}
+    </div>`;
+  }else{
+    dot.className='pdot r';st.textContent='Not punched in today';
+    const sh=SHIFTS[CU.shift||'general'];
+    tc.innerHTML=`<div class="card"><div class="chdr">Shift — ${sh.label}</div>
+      <div class="lr"><div class="lrl"><div class="lrt">Start</div></div><div class="lrr"><strong>${sh.start}</strong></div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">End</div></div><div class="lrr"><strong>${sh.end}</strong></div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Week Off</div></div><div class="lrr"><strong>${DAYS[CU.week_off||0]}</strong></div></div>
+    </div>`;
+  }
+}
+async function doPunch(){
+  const btn=document.getElementById('pbtn');btn.innerHTML='<div class="spin"></div>';btn.disabled=true;
+  try{
+    if(!navigator.geolocation){toast('GPS not supported');return;}
+    const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:12000}));
+    const ul={lat:pos.coords.latitude,lon:pos.coords.longitude};
+    const ps=window._ps;if(!ps){toast('Select a store first');return;}
+    const dist=hv(ul,{lat:ps.lat,lon:ps.lon});
+    if(dist>ps.radius){toast(`📍 Outside store!\n${Math.round(dist)}m from ${ps.name}. Must be within ${ps.radius}m.`,4000);document.getElementById('pdot').className='pdot r';document.getElementById('pst').textContent=`${Math.round(dist)}m — Punch blocked`;return;}
+    const td=today(),tn=nowT();const ex=await dbGet(`attendance/${CU.code}/${td}`);
+    if(!ex){
+      const status=cSt(tn,CU.shift||'general');
+      await dbSet(`attendance/${CU.code}/${td}`,{punch_in:tn,punch_out:'',status,lat_in:ul.lat,lon_in:ul.lon,ot_hours:0,emp_id:CU.code,emp_name:CU.name,store_id:ps.id,store_name:ps.name,date:td});
+      await dbPush('audit_log',{action:'PUNCH_IN',actor:CU.code,date:td,time:tn,status,store:ps.name,ts:Date.now()});
+      toast(`✅ Punched In — ${status==='P'?'On time':status==='LATE'?'Late mark':status}`);
+    }else{
+      if(ex.punch_out){toast('Already punched out today');return;}
+      const hrs=hrsB(ex.punch_in,tn);
+      const sh=SHIFTS[CU.shift||'general'];const[se1,se2]=sh.end.split(':').map(Number);const[tn1,tn2]=tn.split(':').map(Number);
+      const ot=Math.max(0,((tn1*60+tn2)-(se1*60+se2))/60);
+      await dbUpd(`attendance/${CU.code}/${td}`,{punch_out:tn,lat_out:ul.lat,lon_out:ul.lon,ot_hours:parseFloat(ot.toFixed(2))});
+      await dbPush('audit_log',{action:'PUNCH_OUT',actor:CU.code,date:td,time:tn,hrs:hrs.toFixed(1),ot:ot.toFixed(1),ts:Date.now()});
+      toast(`✅ Punched Out — ${hrs.toFixed(1)}h${ot>0?`, ${ot.toFixed(1)}h OT`:''}`);
+    }
+    loadTodPunch();
+  }catch(e){
+    if(e.code===1)toast('📍 Location permission denied!\nEnable GPS in browser settings.');
+    else if(e.code===2)toast('📍 GPS unavailable. Move outdoors.');
+    else if(e.code===3)toast('📍 GPS timeout. Try again.');
+    else{toast('Error: '+e.message);console.error(e);}
+  }finally{const b=document.getElementById('pbtn');if(b&&!b.disabled){b.innerHTML=`<div class="pbico">👆</div><div id="pblbl">Punch</div>`;}else if(b)b.disabled=false;}
+}
+
+/* ══════════════════════════════════════════ LEAVE */
+async function renderLeave(){
+  const el=document.getElementById('pgl');el.innerHTML=`<div class="pad"><p class="tc tm ts">Loading…</p></div>`;
+  try{
+    const [lvD,blD,emD]=await Promise.all([dbGet('leaves'),dbGet(`leave_balance/${CU.code}`),dbGet('employees')]);
+    let earn=0,used=0;if(blD)Object.values(blD).forEach(r=>{earn+=r.apl_earned||0;used+=r.apl_used||0;});
+    const bal=earn-used,pct=earn>0?Math.min(100,Math.round(bal/earn*100)):0;
+    let myLv=lvD?Object.entries(lvD).filter(([k,l])=>l.emp_id===CU.code).sort(([,a],[,b])=>b.applied_on>a.applied_on?1:-1).slice(0,25):[];
+    let pLv=[];
+    if(cAppr(CU.role)&&lvD){if(CU.role==='admin')pLv=Object.entries(lvD).filter(([k,l])=>l.status==='PENDING');else if(emD){const sb=Object.values(emD).filter(e=>e.reporting_manager===CU.code).map(e=>e.code);pLv=Object.entries(lvD).filter(([k,l])=>l.status==='PENDING'&&sb.includes(l.emp_id));}}
+    const lb={APL:'pp',CL:'pt',SL:'pb',EL:'pg',LWP:'pr'};
+    el.innerHTML=`<div class="padt fade">
+      <div class="card"><div class="fb mb8"><div class="chdr" style="margin:0">APL Balance</div><span class="pill pp">${bal} days left</span></div>
+        <div class="bbwrap"><div class="bbrow"><span>Earned: ${earn}</span><span>Used: ${used}</span></div><div class="bbtrack"><div class="bbfill" style="width:${pct}%"></div></div></div>
+        <p class="tm ts mt8">2 APL earned each month with zero approved leaves taken</p>
+      </div>
+      <div class="sg3"><div class="st pink"><div class="sv">${earn}</div><div class="sl">Earned</div></div><div class="st red"><div class="sv">${used}</div><div class="sl">Used</div></div><div class="st green"><div class="sv">${bal}</div><div class="sl">Balance</div></div></div>
+      <button class="btn btnp btnbl mb12" onclick="openLvApply()">+ Apply for Leave</button>
+      ${pLv.length?`<div class="card"><div class="chdr">Pending Approvals (${pLv.length})</div>${pLv.map(([k,l])=>`<div class="lr"><div class="lrl"><div class="lrt">${l.emp_name||l.emp_id} <span class="pill ${lb[l.leave_type]||'pgr'}" style="font-size:9.5px">${l.leave_type}</span></div><div class="lrs">${fD(l.from_date)} → ${fD(l.to_date)} ${l.half_day?'· HD':''} · ${l.days}d</div><div class="lrs">${l.reason}</div></div><div class="lrr"><button class="btn btng btnsm" onclick="openLvAp('${k}')">Review</button></div></div>`).join('')}</div>`:''}
+      <div class="card"><div class="chdr">My Leave History</div>
+        ${myLv.length?myLv.map(([k,l])=>{const sc={PENDING:'pa',APPROVE:'pg',REJECT:'pr'};return`<div class="lr"><div class="lrl"><div class="lrt">${fD(l.from_date)} → ${fD(l.to_date)}</div><div class="lrs"><span class="pill ${lb[l.leave_type]||'pgr'}" style="font-size:9.5px">${l.leave_type}</span> · ${l.reason}</div></div><div class="lrr"><span class="pill ${sc[l.status]||'pgr'}">${l.status}</span></div></div>`;}).join(''):`<div class="es" style="padding:20px"><div class="ei">📅</div><p>No leaves applied yet</p></div>`}
+      </div>
+    </div>`;
+  }catch(e){el.innerHTML=`<div class="es"><div class="ei">⚠️</div><p>Error loading</p></div>`;console.error(e);}
+}
+function openLvApply(){const td=today();document.getElementById('lvfrom').value=td;document.getElementById('lvto').value=td;document.getElementById('lvreason').value='';isHD=false;document.getElementById('cfd').classList.add('sel');document.getElementById('chd').classList.remove('sel');onLvType();openSheet('shlva');}
+function setHD(v){isHD=v;document.getElementById('cfd').classList.toggle('sel',!v);document.getElementById('chd').classList.toggle('sel',v);}
+async function onLvType(){const t=document.getElementById('lvtype').value,row=document.getElementById('aplbalbox');if(t==='APL'){const b=await dbGet(`leave_balance/${CU.code}`);let bl=0;if(b){let e=0,u=0;Object.values(b).forEach(r=>{e+=r.apl_earned||0;u+=r.apl_used||0;});bl=e-u;}document.getElementById('aplbaln').textContent=`${bl} days`;row.style.display='block';}else row.style.display='none';}
+async function submitLeave(){
+  const type=document.getElementById('lvtype').value,from=document.getElementById('lvfrom').value,to=document.getElementById('lvto').value,reason=document.getElementById('lvreason').value.trim();
+  if(!from||!to||!reason){toast('Fill all fields');return;}if(from>to){toast('From must be before To');return;}
+  const days=isHD?0.5:wdB(from,to);
+  if(type==='APL'){const b=await dbGet(`leave_balance/${CU.code}`);let bl=0;if(b){let e=0,u=0;Object.values(b).forEach(r=>{e+=r.apl_earned||0;u+=r.apl_used||0;});bl=e-u;}if(bl<days){toast(`Insufficient APL. Available:${bl}, Requested:${days}`);return;}}
+  await dbPush('leaves',{emp_id:CU.code,emp_name:CU.name,leave_type:type,from_date:from,to_date:to,reason,half_day:isHD,days,status:'PENDING',applied_on:today(),approved_by:'',approved_on:''});
+  closeSheet('shlva');toast('Leave applied ✅');renderLeave();loadBadges();
+}
+function openLvAp(key){pLvK=key;dbGet(`leaves/${key}`).then(l=>{if(!l)return;document.getElementById('lvapdet').innerHTML=`<div class="card" style="padding:11px 13px"><div class="lr"><div class="lrl"><div class="lrt">Employee</div></div><div class="lrr"><strong>${l.emp_name||l.emp_id}</strong></div></div><div class="lr"><div class="lrl"><div class="lrt">Type</div></div><div class="lrr"><span class="pill pb">${l.leave_type}</span></div></div><div class="lr"><div class="lrl"><div class="lrt">Period</div></div><div class="lrr"><strong>${fD(l.from_date)} – ${fD(l.to_date)}</strong></div></div><div class="lr"><div class="lrl"><div class="lrt">Days</div></div><div class="lrr"><strong>${l.days}${l.half_day?' (HD)':''}</strong></div></div><div class="lr"><div class="lrl"><div class="lrt">Reason</div></div><div class="lrr ts" style="max-width:160px;text-align:right">${l.reason}</div></div></div>`;document.getElementById('lvaprk').value='';openSheet('shlvap');});}
+async function actLeave(action){
+  if(!pLvK)return;const l=await dbGet(`leaves/${pLvK}`);const rk=document.getElementById('lvaprk').value;
+  await dbUpd(`leaves/${pLvK}`,{status:action,approved_by:CU.code,approved_on:today(),remark:rk});
+  if(action==='APPROVE'){
+    let d=new Date(l.from_date+'T00:00:00'),end=new Date(l.to_date+'T00:00:00');
+    while(d<=end){const ds=d.toISOString().slice(0,10);await dbUpd(`attendance/${l.emp_id}/${ds}`,{status:l.half_day?'HD':'L',emp_id:l.emp_id,punch_in:'',punch_out:'',ot_hours:0,date:ds});d.setDate(d.getDate()+1);}
+    if(l.leave_type==='APL'){const bD=await dbGet(`leave_balance/${l.emp_id}`);if(bD){const ks=Object.keys(bD),lk=ks[ks.length-1],lr=bD[lk];const nu=(lr.apl_used||0)+l.days,nb=Math.max(0,(lr.apl_earned||0)-nu);await dbUpd(`leave_balance/${l.emp_id}/${lk}`,{apl_used:nu,apl_balance:nb});}}
+    await dbPush('audit_log',{action:'LEAVE_APPROVE',actor:CU.code,target:l.emp_id,ts:Date.now()});
+  }
+  closeSheet('shlvap');toast(action==='APPROVE'?'Leave Approved ✅':'Leave Rejected');renderLeave();loadBadges();
+}
+
+/* ══════════════════════════════════════════ REGULARIZATION */
+function openReg(date,status){pReg={date,status};document.getElementById('reginfo').textContent=`Date: ${fD(date)} · Current: ${status}`;document.getElementById('regreason').value='';openSheet('shreg');}
+async function submitReg(){
+  if(!pReg)return;const reason=document.getElementById('regreason').value.trim();if(!reason){toast('Enter a reason');return;}
+  const ex=await dbGet('regularizations');if(ex){const dup=Object.values(ex).find(r=>r.emp_id===CU.code&&r.date===pReg.date&&r.status==='PENDING');if(dup){toast('Already pending for this date');closeSheet('shreg');return;}}
+  await dbPush('regularizations',{emp_id:CU.code,emp_name:CU.name,date:pReg.date,original_status:pReg.status,requested_status:'P',reason,raised_on:today(),status:'PENDING',l1_action:'',l1_by:'',l1_remark:'',final_status:'PENDING'});
+  closeSheet('shreg');toast('Regularization submitted ✅');renderDash();loadBadges();
+}
+function openRegAp(key){pRegK=key;dbGet(`regularizations/${key}`).then(r=>{if(!r)return;document.getElementById('regapdet').innerHTML=`<div class="card" style="padding:11px 13px"><div class="lr"><div class="lrl"><div class="lrt">Employee</div></div><div class="lrr"><strong>${r.emp_name||r.emp_id}</strong></div></div><div class="lr"><div class="lrl"><div class="lrt">Date</div></div><div class="lrr"><strong>${fD(r.date)}</strong></div></div><div class="lr"><div class="lrl"><div class="lrt">Was</div></div><div class="lrr">${spill(r.original_status)}</div></div><div class="lr"><div class="lrl"><div class="lrt">Requesting</div></div><div class="lrr">${spill('P')}</div></div><div class="lr"><div class="lrl"><div class="lrt">Reason</div></div><div class="lrr ts" style="max-width:160px;text-align:right">${r.reason}</div></div></div>`;document.getElementById('regaprk').value='';openSheet('shregap');});}
+async function actReg(action){
+  if(!pRegK)return;const r=await dbGet(`regularizations/${pRegK}`);const rk=document.getElementById('regaprk').value;
+  await dbUpd(`regularizations/${pRegK}`,{status:action,l1_action:action,l1_by:CU.code,l1_remark:rk,final_status:action});
+  if(action==='APPROVE'){await dbUpd(`attendance/${r.emp_id}/${r.date}`,{status:'REG'});await dbPush('audit_log',{action:'REG_APPROVE',actor:CU.code,target:r.emp_id,date:r.date,old:r.original_status,ts:Date.now()});await checkAPL(r.emp_id,r.date.slice(0,7));}
+  closeSheet('shregap');toast(action==='APPROVE'?'Approved ✅':'Rejected');renderDash();renderLeave();loadBadges();
+}
+
+/* ══════════════════════════════════════════ APL ENGINE */
+async function checkAPL(empId,moStr){
+  const lvD=await dbGet('leaves');if(!lvD)return;
+  const appLv=Object.values(lvD).filter(l=>l.emp_id===empId&&l.status==='APPROVE'&&l.from_date.startsWith(moStr));
+  if(!appLv.length){const bD=await dbGet(`leave_balance/${empId}`);if(bD){const al=Object.values(bD).some(r=>r.month===moStr&&r.reason==='clean_month');if(al)return;}
+    await dbPush(`leave_balance/${empId}`,{month:moStr,apl_earned:APL_CREDIT,apl_used:0,apl_balance:APL_CREDIT,reason:'clean_month',credited_on:today()});}
+}
+async function runAPL(){
+  if(!cAdmin(CU.role)){toast('Admin only');return;}
+  const now=new Date(),prev=new Date(now.getFullYear(),now.getMonth()-1,1),ms=prev.toISOString().slice(0,7);
+  const emps=await dbGet('employees');if(!emps)return;let cnt=0;
+  for(const[code]of Object.entries(emps)){await checkAPL(code,ms);cnt++;}
+  toast(`✅ APL credit processed for ${cnt} employees`);
+}
+
+/* ══════════════════════════════════════════ PAYROLL */
+async function renderPayroll(){
+  const el=document.getElementById('pgp');el.innerHTML=`<div class="pad"><p class="tc tm ts">Loading…</p></div>`;
+  try{
+    const now=new Date(),yr=now.getFullYear(),mo=now.getMonth()+1;
+    const [aD,cfD]=await Promise.all([dbGet(`attendance/${CU.code}`),dbGet('config')]);
+    const s=calcPay(CU,aD,mo,yr);const org=cfD?.orgName||'Kidza';const mn=MONS[mo-1];
+    el.innerHTML=`<div class="padt fade">
+      <div class="card" style="background:linear-gradient(135deg,var(--pink),var(--pink2));border:none;text-align:center;padding:20px">
+        <div style="color:rgba(255,255,255,.72);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Net Pay — ${mn} ${yr}</div>
+        <div style="color:#fff;font-size:32px;font-weight:900;margin-top:4px">₹${s.net.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
+      </div>
+      <div class="sg3"><div class="st green"><div class="sv">${s.pres}</div><div class="sl">Present</div></div><div class="st red"><div class="sv">${s.abs}</div><div class="sl">Absent</div></div><div class="st amber"><div class="sv">${s.hd}</div><div class="sl">Half Days</div></div><div class="st"><div class="sv">${s.lc}</div><div class="sl">Late</div></div><div class="st blue"><div class="sv">${s.ot.toFixed(1)}h</div><div class="sl">OT Hrs</div></div><div class="st"><div class="sv">${WORK_DAYS}</div><div class="sl">Work Days</div></div></div>
+      <div class="card"><div class="chdr">Earnings</div>
+        <div class="lr"><div class="lrl"><div class="lrt">Basic Salary</div></div><div class="lrr"><strong>₹${(CU.salary||0).toLocaleString('en-IN')}</strong></div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Overtime Pay</div></div><div class="lrr" style="color:var(--green)"><strong>+₹${s.otp.toFixed(0)}</strong></div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Gross Pay</div></div><div class="lrr"><strong>₹${s.gross.toFixed(0)}</strong></div></div>
+      </div>
+      <div class="card"><div class="chdr">Deductions</div>
+        <div class="lr"><div class="lrl"><div class="lrt">Absent (${s.abs} days)</div></div><div class="lrr" style="color:var(--red)">-₹${s.abd.toFixed(0)}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Half Days (${s.hd})</div></div><div class="lrr" style="color:var(--red)">-₹${s.hdd.toFixed(0)}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Late Deduction</div></div><div class="lrr" style="color:var(--red)">-₹${s.ld.toFixed(0)}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">TDS (Monthly)</div></div><div class="lrr" style="color:var(--red)">-₹${s.tax.toFixed(0)}</div></div>
+      </div>
+      <div class="sg2">
+        <button class="btn btnp" onclick="showSlip('${CU.code}',${mo},${yr})">📄 Salary Slip</button>
+        <button class="btn btno" onclick="showTax()">📊 Tax Report</button>
+      </div>
+      ${cAdmin(CU.role)?`<div class="card mt8"><div class="chdr">Admin — Team Payroll</div><div style="display:flex;flex-direction:column;gap:8px"><button class="btn btno btnbl" onclick="genAllSlips()">💰 Generate All Salary Slips</button><button class="btn btno btnbl" onclick="openSheet('shrpt')">📋 Export Payroll Report</button></div></div>`:''}
+    </div>`;
+  }catch(e){el.innerHTML=`<div class="es"><div class="ei">⚠️</div><p>Error</p></div>`;console.error(e);}
+}
+function calcPay(emp,aD,month,year){
+  const moS=`${year}-${String(month).padStart(2,'0')}`;
+  let pres=0,lat=0,hd=0,abs=0,ot=0,lc=0;
+  if(aD)Object.entries(aD).forEach(([d,r])=>{if(!d.startsWith(moS))return;if(r.status==='P'||r.status==='REG')pres++;else if(r.status==='LATE'){lat++;lc++;}else if(r.status==='HD')hd++;else if(r.status==='A')abs++;ot+=parseFloat(r.ot_hours||0);});
+  const sal=emp.salary||0,pd=sal/WORK_DAYS;
+  const ld=Math.floor(lc/LATE_AB)*pd,abd=abs*pd,hdd=hd*pd*0.5;
+  const otp=ot*(pd/SHRS)*1.5,gross=sal+otp,net0=gross-abd-hdd-ld;
+  const ann=net0*12;let taxA=0;
+  if(ann>1000000)taxA=(ann-1000000)*0.30+125000+100000;else if(ann>500000)taxA=(ann-500000)*0.20+25000;else if(ann>250000)taxA=(ann-250000)*0.05;
+  const tax=taxA/12;return{pres:pres+lat,abs,hd,lc,ot,otp,gross,abd,hdd,ld,tax,net:net0-tax,ann,taxA};
+}
+async function showSlip(empCode,month,year){
+  const [eD,aD,cfD]=await Promise.all([dbGet(`employees/${empCode}`),dbGet(`attendance/${empCode}`),dbGet('config')]);
+  if(!eD){toast('Employee not found');return;}
+  const emp={...eD,code:empCode},s=calcPay(emp,aD,month,year),org=cfD?.orgName||'Kidza',mn=MONS[month-1];
+  document.getElementById('slipbody').innerHTML=`<div style="padding:16px" id="sprintarea">
+    <div style="background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;padding:20px;border-radius:14px;margin-bottom:14px;text-align:center">
+      <div style="font-size:11px;opacity:.72;text-transform:uppercase;letter-spacing:.1em">${org}</div>
+      <div style="font-size:21px;font-weight:900;margin-top:4px">SALARY SLIP</div>
+      <div style="opacity:.78;font-size:13px;margin-top:4px">${mn} ${year}</div>
+    </div>
+    <div class="card"><div class="chdr">Employee Details</div>
+      <div class="lr"><div class="lrl"><div class="lrt">Name</div></div><div class="lrr"><strong>${emp.name}</strong></div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Code</div></div><div class="lrr"><strong>${empCode}</strong></div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Designation</div></div><div class="lrr">${emp.designation||'—'}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Department</div></div><div class="lrr">${emp.department||'—'}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Role</div></div><div class="lrr">${rpill(emp.role)}</div></div>
+    </div>
+    <div class="card"><div class="chdr">Attendance</div>
+      <div class="sg3"><div class="st green"><div class="sv">${s.pres}</div><div class="sl">Present</div></div><div class="st red"><div class="sv">${s.abs}</div><div class="sl">Absent</div></div><div class="st amber"><div class="sv">${s.hd}</div><div class="sl">Half Day</div></div><div class="st"><div class="sv">${s.lc}</div><div class="sl">Late</div></div><div class="st blue"><div class="sv">${s.ot.toFixed(1)}h</div><div class="sl">OT Hrs</div></div><div class="st"><div class="sv">${WORK_DAYS}</div><div class="sl">Work Days</div></div></div>
+    </div>
+    <div class="card"><div class="chdr">Earnings & Deductions</div>
+      <div class="lr"><div class="lrl"><div class="lrt">Basic Salary</div></div><div class="lrr"><strong>₹${(emp.salary||0).toLocaleString('en-IN')}</strong></div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Overtime Pay</div></div><div class="lrr" style="color:var(--green)"><strong>+₹${s.otp.toFixed(0)}</strong></div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Absent Deduction</div></div><div class="lrr" style="color:var(--red)">-₹${s.abd.toFixed(0)}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Half Day Deduction</div></div><div class="lrr" style="color:var(--red)">-₹${s.hdd.toFixed(0)}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Late Deduction</div></div><div class="lrr" style="color:var(--red)">-₹${s.ld.toFixed(0)}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">TDS</div></div><div class="lrr" style="color:var(--red)">-₹${s.tax.toFixed(0)}</div></div>
+    </div>
+    <div class="card" style="background:linear-gradient(135deg,var(--pink),var(--pink2));border:none">
+      <div style="color:rgba(255,255,255,.72);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Net Pay — ${mn} ${year}</div>
+      <div style="color:#fff;font-size:32px;font-weight:900;margin-top:5px">₹${s.net.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
+    </div>
+    <div class="card"><div class="chdr">Tax Summary (Annual)</div>
+      <div class="lr"><div class="lrl"><div class="lrt">Annual Gross (est.)</div></div><div class="lrr">₹${s.ann.toLocaleString('en-IN',{maximumFractionDigits:0})}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Annual Tax</div></div><div class="lrr">₹${s.taxA.toLocaleString('en-IN',{maximumFractionDigits:0})}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Monthly TDS</div></div><div class="lrr"><strong>₹${s.tax.toFixed(0)}</strong></div></div>
+    </div>
+    <p class="tc tm ts" style="padding:8px 0 12px">Computer-generated slip — ${org}</p>
+  </div>`;
+  openFP('fpslip');
+  await dbSet(`salary_slips/${empCode}/${year}_${String(month).padStart(2,'0')}`,{month,year,gross:s.gross.toFixed(0),deductions:(s.abd+s.hdd+s.ld+s.tax).toFixed(0),net:s.net.toFixed(0),generated_on:today()});
+}
+function printSlip(){const a=document.getElementById('sprintarea');if(!a)return;const w=window.open('','_blank');w.document.write(`<html><head><title>Salary Slip</title><style>body{font-family:sans-serif;padding:16px;color:#1a1d2e}*{box-sizing:border-box}.card{background:#fff;border:1px solid #e4e7f0;border-radius:12px;padding:14px;margin-bottom:11px}.lr{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #e4e7f0;font-size:13px}.sg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:11px}.st{background:#f5f6fa;border-radius:10px;padding:12px;text-align:center}.sv{font-size:20px;font-weight:800}.sl{font-size:9px;color:#8b90aa;text-transform:uppercase}</style></head><body>${a.innerHTML}</body></html>`);w.print();w.close();}
+async function showTax(){const now=new Date(),yr=now.getFullYear();const aD=await dbGet(`attendance/${CU.code}`);let tot=0;for(let m=1;m<=12;m++){const s=calcPay(CU,aD,m,yr);tot+=s.net;}const taxA=tot>1000000?(tot-1000000)*0.30+125000+100000:tot>500000?(tot-500000)*0.20+25000:tot>250000?(tot-250000)*0.05:0;toast(`FY ${yr}: Income ₹${tot.toLocaleString('en-IN',{maximumFractionDigits:0})} | Tax ₹${taxA.toLocaleString('en-IN',{maximumFractionDigits:0})}`);}
+async function genAllSlips(){const now=new Date(),mo=now.getMonth()+1,yr=now.getFullYear();const emps=await dbGet('employees');if(!emps)return;for(const[code]of Object.entries(emps)){await dbSet(`salary_slips/${code}/${yr}_${String(mo).padStart(2,'0')}`,{month:mo,year:yr,emp_code:code,generated_on:today()});}toast('✅ All salary slips generated');}
+
+/* ══════════════════════════════════════════ PROFILE */
+async function renderProfile(){
+  const el=document.getElementById('pgm');
+  try{
+    const [eD,rstD,slD]=await Promise.all([dbGet(`employees/${CU.code}`),dbGet(`rosters/${CU.code}`),dbGet(`salary_slips/${CU.code}`)]);
+    const e=eD||CU;const ms=stores.find(s=>s.id===e.assigned_store);
+    let rH=`<div class="es" style="padding:16px"><p class="tm ts">No roster assigned</p></div>`;
+    if(rstD){const r=Object.values(rstD).sort((a,b)=>b.week_start>a.week_start?1:-1)[0];rH=`<div class="lr"><div class="lrl"><div class="lrt">Week of ${fD(r.week_start)}</div><div class="lrs">Shift: ${SHIFTS[r.shift||'general'].label} · WO: ${DAYS[r.week_off||0]}</div></div></div>`;}
+    let slH=`<div class="es" style="padding:16px"><p class="tm ts">No slips yet</p></div>`;
+    if(slD){slH=Object.entries(slD).reverse().slice(0,6).map(([k,s])=>`<div class="lr"><div class="lrl"><div class="lrt">${MONS[s.month-1]} ${s.year}</div><div class="lrs">Net ₹${parseInt(s.net||0).toLocaleString('en-IN')}</div></div><div class="lrr"><button class="btn btnp btnsm" onclick="showSlip('${CU.code}',${s.month},${s.year})">View</button></div></div>`).join('');}
+    el.innerHTML=`<div class="padt fade">
+      <div class="card tc" style="padding:24px 16px">
+        <div style="width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">${ini(e.name)}</div>
+        <div style="font-size:19px;font-weight:800">${e.name}</div>
+        <div class="tm ts mt8">${CU.code}</div>
+        <div style="margin-top:8px">${rpill(e.role)}</div>
+      </div>
+      <div class="card"><div class="chdr">My Details</div>
+        <div class="lr"><div class="lrl"><div class="lrt">Mobile</div></div><div class="lrr">${e.mobile||'—'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Email</div></div><div class="lrr">${e.email||'—'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Designation</div></div><div class="lrr">${e.designation||'—'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Department</div></div><div class="lrr">${e.department||'—'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Join Date</div></div><div class="lrr">${fD(e.join_date)}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Birthday</div></div><div class="lrr">${e.dob?fD(e.dob):'—'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Shift</div></div><div class="lrr"><strong>${SHIFTS[e.shift||'general'].label}</strong></div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Week Off</div></div><div class="lrr">${DAYS[e.week_off||0]}</div></div>
+        ${ms?`<div class="lr"><div class="lrl"><div class="lrt">Store</div></div><div class="lrr"><span class="pill pp">${ms.name}</span></div></div>`:''}
+      </div>
+      <div class="card"><div class="chdr">Current Roster</div>${rH}</div>
+      <div class="card"><div class="chdr">Salary Slips</div>${slH}<button class="btn btno btnbl btnsm mt8" onclick="showSlip('${CU.code}',${new Date().getMonth()+1},${new Date().getFullYear()})">Generate This Month</button></div>
+      <div class="sbrow"><span class="ts">Theme</span><button class="tt ${isDark?'on':''}" onclick="toggleTheme()"><div class="tk">${isDark?'🌙':'☀️'}</div></button></div>
+      ${cAdmin(CU.role)?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><button class="btn btnp btnbl" onclick="openFP('fpemps');loadEmpList()">👥 Manage Employees</button><button class="btn btno btnbl" onclick="openFP('fpstores');renderStList()">📍 Manage Stores</button><button class="btn btno btnbl" onclick="openAudit()">📋 View Audit Log</button></div>`:''}
+      <button class="btn btnr btnbl mt12" onclick="doLogout()" style="margin-bottom:30px">Sign Out</button>
+    </div>`;
+  }catch(e){el.innerHTML=`<div class="es"><div class="ei">⚠️</div><p>Error</p></div>`;console.error(e);}
+}
+
+/* ══════════════════════════════════════════ EMPLOYEES */
+async function loadEmpList(){const emps=await dbGet('employees');allEmps=emps?Object.entries(emps).map(([id,v])=>({...v,code:id})):[];filtEmps=[...allEmps];renderEmpList();}
+function renderEmpList(){
+  const el=document.getElementById('emplistbody');
+  if(!filtEmps.length){el.innerHTML=`<div class="es"><div class="ei">👥</div><p>No employees found</p></div>`;return;}
+  el.innerHTML=`<div class="card">${filtEmps.map(e=>`<div class="lr"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ini(e.name)}</div><div class="lrl"><div class="lrt">${e.name}</div><div class="lrs">${e.code} · ${e.designation||e.department||''} ${rpill(e.role)}</div></div><div class="lrr" style="gap:4px"><button class="btn btno btnsm" onclick="openAddEmp('${e.code}')">Edit</button><button class="btn btnp btnsm" onclick="showSlip('${e.code}',${new Date().getMonth()+1},${new Date().getFullYear()})">Slip</button></div></div>`).join('')}</div>`;
+}
+function filterEmps(){const q=document.getElementById('esrch').value.toLowerCase();filtEmps=allEmps.filter(e=>(e.name||'').toLowerCase().includes(q)||(e.code||'').toLowerCase().includes(q)||(e.department||'').toLowerCase().includes(q));renderEmpList();}
+async function openAddEmp(empCode){
+  eEmpId=empCode;document.getElementById('fpetit').textContent=empCode?'Edit Employee':'Add Employee';
+  const ss=document.getElementById('est');ss.innerHTML=stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  const emps=await dbGet('employees');const mo='<option value="">None</option>'+(emps?Object.entries(emps).map(([id,e])=>`<option value="${id}">${e.name} (${id})</option>`).join(''):'');
+  ['ermgr','el1','el2'].forEach(id=>document.getElementById(id).innerHTML=mo);
+  if(empCode&&emps&&emps[empCode]){
+    const e=emps[empCode];document.getElementById('ec').value=empCode;document.getElementById('ec').disabled=true;
+    document.getElementById('en').value=e.name||'';document.getElementById('em').value=e.mobile||'';document.getElementById('ee').value=e.email||'';
+    document.getElementById('ed').value=e.designation||'';document.getElementById('ept').value=e.department||'';
+    document.getElementById('est').value=e.assigned_store||'';document.getElementById('ermgr').value=e.reporting_manager||'';
+    document.getElementById('edoj').value=e.join_date||'';document.getElementById('edob').value=e.dob||'';
+    document.getElementById('esal').value=e.salary||'';document.getElementById('erole').value=e.role||'staff';
+    document.getElementById('eshift').value=e.shift||'general';document.getElementById('ewoff').value=e.week_off||'0';
+    document.getElementById('el1').value=e.l1_manager||'';document.getElementById('el2').value=e.l2_manager||'';
+    document.getElementById('epass').value='';document.getElementById('epass').placeholder='Leave blank to keep current';
+  }else{
+    ['ec','en','em','ee','ed','ept','epass'].forEach(id=>{const el2=document.getElementById(id);el2.value='';el2.disabled=false;});
+    ['edoj','edob','esal'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('erole').value='staff';document.getElementById('eshift').value='general';document.getElementById('ewoff').value='0';
+    document.getElementById('epass').placeholder='Set login password';
+  }
+  openFP('fpemp');
+}
+async function saveEmployee(){
+  const code=document.getElementById('ec').value.trim().toUpperCase(),name=document.getElementById('en').value.trim(),sal=parseInt(document.getElementById('esal').value)||0,role=document.getElementById('erole').value,pass=document.getElementById('epass').value;
+  if(!code||!name){toast('Code and Name required');return;}if(!eEmpId&&!pass){toast('Password required');return;}
+  const data={name,mobile:document.getElementById('em').value.trim(),email:document.getElementById('ee').value.trim(),designation:document.getElementById('ed').value.trim(),department:document.getElementById('ept').value.trim(),assigned_store:document.getElementById('est').value,reporting_manager:document.getElementById('ermgr').value,join_date:document.getElementById('edoj').value,dob:document.getElementById('edob').value,salary:sal,role,status:'active',shift:document.getElementById('eshift').value,week_off:parseInt(document.getElementById('ewoff').value)||0,l1_manager:document.getElementById('el1').value,l2_manager:document.getElementById('el2').value,code};
+  if(pass)data.password_hash=hp(pass);
+  const btn=document.getElementById('sebtn');btn.innerHTML='<div class="spin"></div> Saving…';btn.disabled=true;
+  try{await dbSet(`employees/${code}`,data);await dbPush('audit_log',{action:eEmpId?'EMP_EDIT':'EMP_ADD',actor:CU.code,target:code,ts:Date.now()});closeFP('fpemp');toast(eEmpId?'Updated ✅':'Employee added ✅');loadEmpList();}
+  catch(e){toast('Save failed');console.error(e);}finally{btn.innerHTML='Save Employee';btn.disabled=false;}
+}
+
+/* ══════════════════════════════════════════ STORES */
+async function renderStList(){
+  const sD=await dbGet('stores');const list=sD?Object.entries(sD):DEFAULT_STORES.map(s=>[s.id,s]);
+  document.getElementById('storelist').innerHTML=`<div class="chdr">Configured Stores (${list.length})</div>`+list.map(([id,s])=>`<div class="lr"><div class="lrl"><div class="lrt">${s.name}</div><div class="lrs">Lat:${s.lat}, Lon:${s.lon} · ${s.radius}m</div></div><button class="btn btnr btnsm" onclick="delStore('${id}')">Del</button></div>`).join('');
+}
+async function addStore(){const n=document.getElementById('stn').value.trim(),lat=parseFloat(document.getElementById('stlat').value),lon=parseFloat(document.getElementById('stlon').value),rad=parseInt(document.getElementById('strad').value)||100;if(!n||!lat||!lon){toast('Name, Lat & Lon required');return;}const id='s'+Date.now();await dbSet(`stores/${id}`,{id,name:n,lat,lon,radius:rad,active:true});const sD=await dbGet('stores');stores=sD?Object.entries(sD).map(([id,v])=>({...v,id})):[];toast('Store added ✅');renderStList();document.getElementById('stn').value='';document.getElementById('stlat').value='';document.getElementById('stlon').value='';}
+async function delStore(id){if(!confirm('Delete this store?'))return;await dbDel(`stores/${id}`);const sD=await dbGet('stores');stores=sD?Object.entries(sD).map(([id,v])=>({...v,id})):[];toast('Deleted');renderStList();}
+
+/* ══════════════════════════════════════════ ROSTER */
+async function openRstSheet(){const emps=await dbGet('employees');const sel=document.getElementById('rstemp');sel.innerHTML='';if(emps){let l=Object.entries(emps);if(CU.role==='manager')l=l.filter(([id,e])=>e.reporting_manager===CU.code);l.forEach(([id,e])=>sel.innerHTML+=`<option value="${id}">${e.name} (${id})</option>`);}const d=new Date();d.setDate(d.getDate()+(8-d.getDay())%7||7);document.getElementById('rstweek').value=d.toISOString().slice(0,10);openSheet('shrst');}
+async function saveRoster(){const eid=document.getElementById('rstemp').value,week=document.getElementById('rstweek').value,shift=document.getElementById('rstshift').value,wo=parseInt(document.getElementById('rstwoff').value);if(!eid||!week){toast('Fill all fields');return;}await dbPush(`rosters/${eid}`,{week_start:week,shift,week_off:wo,assigned_by:CU.code,assigned_on:today()});await dbUpd(`employees/${eid}`,{shift,week_off:wo});closeSheet('shrst');toast('Roster assigned ✅');}
+
+/* ══════════════════════════════════════════ MANAGER EDIT ATT */
+function openMgrEdit(empId,date){mgrEmpId=empId;mgrDate=date;mgrSt=null;document.getElementById('mgreinfo').textContent=`${empId} | ${fD(date)}`;document.getElementById('mgreason').value='';document.querySelectorAll('#stcr .chip').forEach(c=>c.classList.remove('sel'));openSheet('shmgr');}
+function selSt(s){mgrSt=s;document.querySelectorAll('#stcr .chip').forEach(c=>c.classList.remove('sel'));event.target.classList.add('sel');}
+async function saveMgrEdit(){if(!mgrSt){toast('Select a status');return;}const reason=document.getElementById('mgreason').value.trim();const ex=await dbGet(`attendance/${mgrEmpId}/${mgrDate}`);const old=ex?ex.status:'—';await dbUpd(`attendance/${mgrEmpId}/${mgrDate}`,{status:mgrSt,emp_id:mgrEmpId,punch_in:ex?.punch_in||'',punch_out:ex?.punch_out||'',ot_hours:ex?.ot_hours||0,manager_edit_reason:reason,edited_by:CU.code,date:mgrDate});await dbPush('audit_log',{action:'MGR_EDIT',actor:CU.code,target:mgrEmpId,date:mgrDate,old,new:mgrSt,reason,ts:Date.now()});closeSheet('shmgr');toast('Attendance updated ✅');}
+
+/* ══════════════════════════════════════════ TEAM ATTENDANCE */
+async function openTeamAtt(){const now=new Date();document.getElementById('tmo').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;openFP('fpteam');loadTeamAtt();}
+async function loadTeamAtt(){
+  const el=document.getElementById('teambody');el.innerHTML=`<p class="tc tm ts">Loading…</p>`;
+  const moV=document.getElementById('tmo').value;const[yr,mo]=moV.split('-').map(Number);
+  const emps=await dbGet('employees');if(!emps){el.innerHTML=`<p class="tc tm ts">No employees</p>`;return;}
+  let tList=Object.entries(emps);if(CU.role==='manager')tList=tList.filter(([id,e])=>e.reporting_manager===CU.code);
+  const dim=new Date(yr,mo,0).getDate();
+  let html=`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Employee</th>`;
+  for(let d=1;d<=Math.min(dim,16);d++)html+=`<th>${d}</th>`;html+=`<th>P</th><th>A</th><th>L</th></tr></thead><tbody>`;
+  for(const[id,e]of tList.slice(0,25)){
+    const att=await dbGet(`attendance/${id}`);const moS=`${yr}-${String(mo).padStart(2,'0')}`;
+    let P2=0,A2=0,L2=0;let row=`<tr><td><div style="font-weight:600">${e.name}</div><div class="tm ts">${id}</div></td>`;
+    for(let d=1;d<=Math.min(dim,16);d++){const ds=`${moS}-${String(d).padStart(2,'0')}`;const s=att?.[ds]?.status||'';const clr={P:'#dcfce7',A:'#fee2e2',L:'#cffafe',HD:'#fef3c7',LATE:'#fef9c3',WO:'#f1f5f9',REG:'#ede9fe'};row+=`<td style="background:${clr[s]||'transparent'};text-align:center;cursor:pointer;font-size:10px;min-width:26px" onclick="openMgrEdit('${id}','${ds}')" title="${s||'—'}">${s||'—'}</td>`;if(s==='P'||s==='REG'||s==='LATE')P2++;else if(s==='A')A2++;else if(s==='L')L2++;}
+    row+=`<td style="font-weight:700;color:var(--green)">${P2}</td><td style="font-weight:700;color:var(--red)">${A2}</td><td style="font-weight:700;color:var(--teal)">${L2}</td></tr>`;
+    html+=row;
+  }
+  html+=`</tbody></table></div>`;el.innerHTML=html;
+}
+
+/* ══════════════════════════════════════════ BULK UPLOAD */
+async function processBulk(){
+  const file=document.getElementById('bulkfile').files[0];if(!file){toast('Select file');return;}
+  if(!window.XLSX){toast('SheetJS not loaded');return;}
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});const hdrs=rows[0].map(h=>String(h).toLowerCase().trim());
+      let added=0,errs=[];
+      for(let i=1;i<rows.length;i++){const row=rows[i];if(!row||!row[0])continue;const get=n=>{const idx=hdrs.indexOf(n.toLowerCase());return idx>=0?String(row[idx]||'').trim():'';};const code=get('code')||get('employee code');const name=get('name');if(!code||!name){errs.push(`Row ${i+1}: missing code/name`);continue;}const pass=get('password')||code.toLowerCase()+'@123';await dbSet(`employees/${code.toUpperCase()}`,{code:code.toUpperCase(),name,mobile:get('mobile'),email:get('email'),designation:get('designation'),department:get('department'),assigned_store:get('store'),role:(get('role')||'staff').toLowerCase(),salary:parseInt(get('salary'))||0,shift:get('shift')||'general',week_off:parseInt(get('weekoff'))||0,join_date:get('doj'),dob:get('dob'),status:'active',password_hash:hp(pass)});added++;}
+      document.getElementById('bulkresult').innerHTML=`<div class="card"><div class="chdr">Upload Result</div><div class="lr"><div class="lrt">Added</div><div class="lrr"><span class="pill pg">${added} employees</span></div></div>${errs.length?`<div class="lr"><div class="lrt ts">Errors</div><div class="lrr ts tm">${errs.join('; ')}</div></div>`:''}</div>`;
+      toast(`✅ ${added} employees imported`);
+    }catch(err){toast('Error: '+err.message);}
+  };reader.readAsArrayBuffer(file);
+}
+function dlTemplate(){if(!window.XLSX){toast('SheetJS not loaded');return;}const ws=XLSX.utils.aoa_to_sheet([['Code','Name','Mobile','Email','Designation','Department','Store','Role','Salary','Shift','WeekOff','DOJ','DOB'],['EMP001','Sample Employee','9999999999','emp@kidza.com','Sales Executive','Sales','s1','staff','25000','general','0','2024-01-01','1995-06-15']]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Employees');XLSX.writeFile(wb,'Kidza_Employee_Template.xlsx');}
+
+/* ══════════════════════════════════════════ REPORTS */
+async function exportRpt(type){
+  if(!window.XLSX){toast('SheetJS not loaded');return;}
+  const moV=document.getElementById('rptmo').value||`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  const[yr,mo]=moV.split('-').map(Number);const emps=await dbGet('employees');if(!emps){toast('No employees');return;}
+  let data=[],hdrs=[];
+  if(type==='payroll'){hdrs=['Code','Name','Dept','Present','Absent','HD','Late','OT Hrs','Gross','Deductions','Net Pay'];for(const[code,emp]of Object.entries(emps)){const att=await dbGet(`attendance/${code}`);const s=calcPay({...emp,code},att,mo,yr);data.push([code,emp.name,emp.department||'',s.pres,s.abs,s.hd,s.lc,s.ot.toFixed(1),s.gross.toFixed(0),(s.abd+s.hdd+s.ld+s.tax).toFixed(0),s.net.toFixed(0)]);}}
+  else if(type==='monthly'){hdrs=['Code','Name','Dept','Present','Absent','HD','WO','Late','OT Hrs'];for(const[code,emp]of Object.entries(emps)){const att=await dbGet(`attendance/${code}`);const s=calcPay({...emp,code},att,mo,yr);data.push([code,emp.name,emp.department||'',s.pres,s.abs,s.hd,0,s.lc,s.ot.toFixed(1)]);}}
+  else if(type==='leave'){hdrs=['Code','Name','Type','From','To','Days','Status','Reason','Approved By'];const lvs=await dbGet('leaves');if(lvs)Object.values(lvs).forEach(l=>{if(l.from_date.startsWith(moV))data.push([l.emp_id,l.emp_name,l.leave_type,l.from_date,l.to_date,l.days,l.status,l.reason,l.approved_by||'']);});}
+  else if(type==='daily'){hdrs=['Date','Code','Name','Punch In','Punch Out','Status','OT Hrs','Store'];for(const[code,emp]of Object.entries(emps)){const att=await dbGet(`attendance/${code}`);if(!att)continue;Object.entries(att).filter(([d])=>d.startsWith(moV)).forEach(([d,r])=>data.push([d,code,emp.name,r.punch_in||'',r.punch_out||'',r.status||'',r.ot_hours||0,r.store_name||'']));}}
+  else if(type==='overtime'){hdrs=['Code','Name','Dept','OT Hrs','OT Pay (₹)'];for(const[code,emp]of Object.entries(emps)){const att=await dbGet(`attendance/${code}`);const s=calcPay({...emp,code},att,mo,yr);if(s.ot>0)data.push([code,emp.name,emp.department||'',s.ot.toFixed(1),s.otp.toFixed(0)]);}}
+  const ws=XLSX.utils.aoa_to_sheet([hdrs,...data]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Report');XLSX.writeFile(wb,`Kidza_${type}_${moV}.xlsx`);closeSheet('shrpt');toast('✅ Report exported');
+}
+
+/* ══════════════════════════════════════════ NOTIFICATIONS */
+async function showNotifs(){
+  const notifs=[];const now=new Date();const emps=await dbGet('employees');
+  if(emps){const td=today().slice(5);Object.values(emps).filter(e=>e.dob&&e.dob.slice(5)===td&&e.status!=='inactive').forEach(e=>notifs.push({icon:'🎂',msg:`${e.name}'s Birthday today!`,sub:e.department||''}));}
+  if(cAppr(CU.role)){const rs=await dbGet('regularizations');if(rs){const p=Object.values(rs).filter(r=>r.status==='PENDING');if(p.length)notifs.push({icon:'📝',msg:`${p.length} Regularization(s) pending`,sub:'Go to Home → calendar'});}const ls=await dbGet('leaves');if(ls){const p=Object.values(ls).filter(l=>l.status==='PENDING');if(p.length)notifs.push({icon:'📅',msg:`${p.length} Leave request(s) pending`,sub:'Go to Leave tab'});}}
+  const sh=SHIFTS[CU.shift||'general'];const[sh2,sm2]=sh.start.split(':').map(Number);const st2=new Date();st2.setHours(sh2,sm2,0);const dm=Math.round((st2-now)/60000);if(dm>0&&dm<=60)notifs.push({icon:'⏰',msg:`Shift starts in ${dm} mins`,sub:sh.label});
+  document.getElementById('notifbody').innerHTML=notifs.length?notifs.map(n=>`<div class="lr"><div style="font-size:24px;flex-shrink:0">${n.icon}</div><div class="lrl"><div class="lrt">${n.msg}</div><div class="lrs">${n.sub}</div></div></div>`).join(''):`<div class="es"><div class="ei">🔔</div><p>All clear</p></div>`;
+  const nd=document.getElementById('ndot');if(nd)nd.style.display=notifs.length?'block':'none';
+  openSheet('shnotif');
+}
+
+/* ══════════════════════════════════════════ AUDIT LOG */
+async function openAudit(){if(!cAdmin(CU.role)){toast('Admin only');return;}const data=await dbGet('audit_log');const ac={PUNCH_IN:'pg',PUNCH_OUT:'pt',LEAVE_APPROVE:'pg',REG_APPROVE:'pg',MGR_EDIT:'pa',EMP_ADD:'pb',EMP_EDIT:'pa',SETUP:'ppu'};document.getElementById('auditbody').innerHTML=data?Object.values(data).reverse().slice(0,200).map(l=>`<div class="lr"><div class="lrl"><div class="lrt"><span class="pill ${ac[l.action]||'pgr'}" style="font-size:9.5px">${l.action}</span></div><div class="lrs">By:${l.actor}${l.target?' → '+l.target:''} ${l.old&&l.new?`(${l.old}→${l.new})`:''}</div><div class="lrs">${l.date||''}</div></div><div class="lrr ts tm">${new Date(l.ts).toLocaleDateString('en-IN')}</div></div>`).join(''):`<div class="es"><div class="ei">📋</div><p>No logs yet</p></div>`;openFP('fpaudit');}
+
+/* ══════════════════════════════════════════ BADGES */
+async function loadBadges(){if(!CU)return;try{if(cAppr(CU.role)){const ls=await dbGet('leaves');let c=0;if(ls)c=Object.values(ls).filter(l=>l.status==='PENDING').length;const b=document.getElementById('bndl');if(b){b.textContent=c;b.classList.toggle('on',c>0);}}const rs=await dbGet('regularizations');let rc=0;if(rs)rc=Object.values(rs).filter(r=>r.status==='PENDING').length;const rb=document.getElementById('bnda');if(rb){rb.textContent=rc;rb.classList.toggle('on',rc>0);}const emps=await dbGet('employees');const nd=document.getElementById('ndot');if(nd){const td=today().slice(5);const bd=emps&&Object.values(emps).some(e=>e.dob&&e.dob.slice(5)===td);nd.style.display=(bd||rc>0)?'block':'none';}}catch(e){}}
+
+/* ══════════════════════════════════════════ INIT */
+document.addEventListener('DOMContentLoaded',async()=>{
+  loadTheme();initFB();
+  document.getElementById('lpass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  await checkFirst();
+  // Auto-open list when opening employee fullpage
+  document.getElementById('fpemps').addEventListener('transitionend',()=>{});
+});
+</script>
+</body>
+</html>
