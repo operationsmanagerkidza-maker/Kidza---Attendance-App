@@ -508,13 +508,13 @@ const DEFAULT_STORES=[
 
 // Firebase config — paste from Firebase console
 const FBC={
-  apiKey:"REPLACE_apiKey",
-  authDomain:"REPLACE.firebaseapp.com",
-  databaseURL:"https://REPLACE-default-rtdb.firebaseio.com",
-  projectId:"REPLACE_projectId",
-  storageBucket:"REPLACE.appspot.com",
-  messagingSenderId:"REPLACE_senderId",
-  appId:"REPLACE_appId"
+  apiKey:"AIzaSyCt9OhJbw1BjfM8orX8lxkhTfKSnPqt_G4",
+  authDomain:"staff-attendance-managem-45eb2.firebaseapp.com",
+  databaseURL:"https://staff-attendance-managem-45eb2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"staff-attendance-managem-45eb2",
+  storageBucket:"staff-attendance-managem-45eb2.firebasestorage.app",
+  messagingSenderId:"78212001332",
+  appId:"1:78212001332:web:5f74f2b9e621096c46e461"
 };
 
 /* ══════════════════════════════════════════ CONSTANTS */
@@ -540,29 +540,61 @@ let db=null;
 function initFB(){
   try{
     if(!window.firebase)return false;
+    if(!FBC.apiKey||FBC.apiKey.indexOf('REPLACE')===0||!FBC.databaseURL||FBC.databaseURL.indexOf('REPLACE')>=0){
+      console.warn('[Kidza] Firebase not configured — using on-device storage.');
+      db=null;return false;
+    }
     if(!firebase.apps.length)firebase.initializeApp(FBC);
     db=firebase.database();return true;
-  }catch(e){return false;}
+  }catch(e){console.warn('[Kidza] Firebase init failed — using on-device storage.',e);db=null;return false;}
+}
+/* ---- Local DB: one JSON tree in localStorage, mimics Firebase nested paths ---- */
+const LOCAL_DB_KEY='ka_db_tree';
+function ldbLoad(){const v=localStorage.getItem(LOCAL_DB_KEY);return v?JSON.parse(v):{};}
+function ldbSave(tree){localStorage.setItem(LOCAL_DB_KEY,JSON.stringify(tree));}
+function ldbGetNode(path){
+  const parts=path.split('/').filter(Boolean);let node=ldbLoad();
+  for(const p of parts){if(node==null||typeof node!=='object')return null;node=node[p];}
+  return node===undefined?null:node;
+}
+function ldbSetNode(path,value){
+  const parts=path.split('/').filter(Boolean);const tree=ldbLoad();
+  if(!parts.length)return;
+  let node=tree;
+  for(let i=0;i<parts.length-1;i++){if(typeof node[parts[i]]!=='object'||node[parts[i]]===null)node[parts[i]]={};node=node[parts[i]];}
+  node[parts[parts.length-1]]=value;ldbSave(tree);
+}
+function ldbUpdNode(path,patch){
+  const ex=ldbGetNode(path);const merged=(ex&&typeof ex==='object')?{...ex,...patch}:{...patch};ldbSetNode(path,merged);
+}
+function ldbDelNode(path){
+  const parts=path.split('/').filter(Boolean);const tree=ldbLoad();
+  if(!parts.length)return;
+  let node=tree;
+  for(let i=0;i<parts.length-1;i++){if(node[parts[i]]===undefined)return;node=node[parts[i]];}
+  delete node[parts[parts.length-1]];ldbSave(tree);
 }
 async function dbGet(p){
   if(db){const s=await db.ref(p).once('value');return s.exists()?s.val():null;}
-  const v=localStorage.getItem('ka_'+p);return v?JSON.parse(v):null;
+  return ldbGetNode(p);
 }
 async function dbSet(p,d){
   if(db)return db.ref(p).set(d);
-  localStorage.setItem('ka_'+p,JSON.stringify(d));
+  ldbSetNode(p,d);
 }
 async function dbUpd(p,d){
   if(db)return db.ref(p).update(d);
-  const ex=await dbGet(p)||{};localStorage.setItem('ka_'+p,JSON.stringify({...ex,...d}));
+  ldbUpdNode(p,d);
 }
 async function dbPush(p,d){
   if(db)return db.ref(p).push(d);
-  const ex=await dbGet(p)||{};const k='k'+Date.now();ex[k]=d;localStorage.setItem('ka_'+p,JSON.stringify(ex));return{key:k};
+  const k='k'+Date.now()+Math.floor(Math.random()*1000);
+  ldbSetNode(p+'/'+k,d);
+  return{key:k};
 }
 async function dbDel(p){
   if(db)return db.ref(p).remove();
-  localStorage.removeItem('ka_'+p);
+  ldbDelNode(p);
 }
 
 /* ══════════════════════════════════════════ UTILS */
