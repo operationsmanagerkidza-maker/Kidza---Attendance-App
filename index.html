@@ -751,9 +751,9 @@ const FBC={
 // FREE email delivery via EmailJS (emailjs.com — free tier, no card needed).
 // Sign up free → add an Email Service + Template → paste the 3 IDs below.
 // Until configured, OTP/notification emails are shown directly in-app (toast/alert) so the feature still works end-to-end for testing.
-const EMAILJS_PUBLIC_KEY="AYGgmkkHyMeJHN1-L";   // e.g. "user_xxxxxxxxxxxx"
-const EMAILJS_SERVICE_ID="service_31y3lzo";   // e.g. "service_xxxxxxx"
-const EMAILJS_TEMPLATE_ID="template_kvve0hj";  // template must accept {{to_email}},{{subject}},{{message}}
+const EMAILJS_PUBLIC_KEY="";   // e.g. "user_xxxxxxxxxxxx"
+const EMAILJS_SERVICE_ID="";   // e.g. "service_xxxxxxx"
+const EMAILJS_TEMPLATE_ID="";  // template must accept {{to_email}},{{subject}},{{message}}
 const EMAIL_NOTIFS_ENABLED=true; // master switch for leave/regularization email alerts
 
 /* ══════════════════════════════════════════ CONSTANTS */
@@ -815,10 +815,27 @@ function initFB(){
     return true;
   }catch(e){console.warn('[Kidza] Firebase init failed — using on-device storage.',e);setSyncDot('local');db=null;return false;}
 }
+/* ---- Safe localStorage wrapper — WebView / file:// can return null or throw SecurityError ---- */
+const _ls={
+  _ok:null,
+  ok(){if(this._ok===null){try{this._ok=typeof localStorage!=='undefined'&&localStorage!==null;}catch(e){this._ok=false;}}return this._ok;},
+  get(k){try{return this.ok()?localStorage.getItem(k):null;}catch(e){return null;}},
+  set(k,v){try{if(this.ok())localStorage.setItem(k,v);}catch(e){}},
+  del(k){try{if(this.ok())localStorage.removeItem(k);}catch(e){}}
+};
+/* ---- In-memory fallback tree used when localStorage is unavailable ---- */
+let _memTree={};
 /* ---- Local DB: one JSON tree in localStorage, mimics Firebase nested paths ---- */
 const LOCAL_DB_KEY='ka_db_tree';
-function ldbLoad(){const v=localStorage.getItem(LOCAL_DB_KEY);return v?JSON.parse(v):{};}
-function ldbSave(tree){localStorage.setItem(LOCAL_DB_KEY,JSON.stringify(tree));}
+function ldbLoad(){
+  const v=_ls.get(LOCAL_DB_KEY);
+  if(v){try{return JSON.parse(v);}catch(e){}}
+  return _memTree;
+}
+function ldbSave(tree){
+  _memTree=tree;
+  try{_ls.set(LOCAL_DB_KEY,JSON.stringify(tree));}catch(e){}
+}
 function ldbGetNode(path){
   const parts=path.split('/').filter(Boolean);let node=ldbLoad();
   for(const p of parts){if(node==null||typeof node!=='object')return null;node=node[p];}
@@ -967,9 +984,9 @@ function toggleTheme(){
   isDark=!isDark;
   document.body.setAttribute('data-theme',isDark?'dark':'');
   document.querySelectorAll('.tt').forEach(b=>{b.classList.toggle('on',isDark);b.querySelector('.tk').textContent=isDark?'🌙':'☀️';});
-  localStorage.setItem('ka_theme',isDark?'dark':'light');
+  _ls.set('ka_theme',isDark?'dark':'light');
 }
-function loadTheme(){if(localStorage.getItem('ka_theme')==='dark'){isDark=true;document.body.setAttribute('data-theme','dark');document.querySelectorAll('.tt').forEach(b=>{b.classList.add('on');b.querySelector('.tk').textContent='🌙';});}}
+function loadTheme(){if(_ls.get('ka_theme')==='dark'){isDark=true;document.body.setAttribute('data-theme','dark');document.querySelectorAll('.tt').forEach(b=>{b.classList.add('on');b.querySelector('.tk').textContent='🌙';});}}
 
 /* ══════════════════════════════════════════ LOGO TAP → ADMIN PIN */
 function logoTap(){ltaps++;clearTimeout(ltimer);ltimer=setTimeout(()=>ltaps=0,1500);if(ltaps>=5){ltaps=0;pinbuf='';updPD();document.getElementById('pino').classList.add('open');}}
@@ -1038,10 +1055,10 @@ async function checkFirst(){const e=await dbGet('employees');if(!e||!Object.keys
 /* ══════════════════════════════════════════ DEVICE BINDING */
 // Generates (and persists locally) a stable per-browser/device fingerprint.
 function getDeviceId(){
-  let id=localStorage.getItem('ka_device_id');
+  let id=_ls.get('ka_device_id');
   if(!id){
     id='dev_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);
-    localStorage.setItem('ka_device_id',id);
+    _ls.set('ka_device_id',id);
   }
   return id;
 }
@@ -1093,7 +1110,7 @@ async function doLogin(){
       }
     }
     CU={...e,code:eid};
-    if(document.getElementById('lremember').checked)localStorage.setItem('ka_lastcode',eid);else localStorage.removeItem('ka_lastcode');
+    if(document.getElementById('lremember').checked)_ls.set('ka_lastcode',eid);else _ls.del('ka_lastcode');
     const sd=await dbGet('stores');
     stores=sd?Object.entries(sd).map(([id,v])=>({...v,id})):DEFAULT_STORES;
     allEmps=emps?Object.entries(emps).map(([id,v])=>({...v,code:id})):[];
@@ -2268,7 +2285,7 @@ async function loadBadges(){if(!CU)return;try{if(cAppr(CU.role)){const ls=await 
 document.addEventListener('DOMContentLoaded',async()=>{
   loadTheme();initFB();
   // Pre-fill saved employee code
-  const savedCode=localStorage.getItem('ka_lastcode');
+  const savedCode=_ls.get('ka_lastcode');
   if(savedCode){const f=document.getElementById('leid');if(f)f.value=savedCode;}
   // Keyboard enter on password → login
   document.getElementById('lpass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
