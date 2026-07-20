@@ -299,12 +299,14 @@ textarea.fi{resize:vertical;min-height:72px}
   <div id="pgd" class="page active"></div>
   <div id="pga" class="page"></div>
   <div id="pgl" class="page"></div>
+  <div id="pgh" class="page"></div>
   <div id="pgp" class="page"></div>
   <div id="pgm" class="page"></div>
   <div class="bnav">
     <div class="bn active" id="bnd" onclick="goPage('dash')"><div class="bni">🏠</div><div>Home</div></div>
     <div class="bn" id="bna" onclick="goPage('attend')"><div class="bni">📍</div><div>Attend</div><div class="bnd" id="bnda">0</div></div>
     <div class="bn" id="bnl" onclick="goPage('leave')"><div class="bni">📅</div><div>Leave</div><div class="bnd" id="bndl">0</div></div>
+    <div class="bn" id="bnh" onclick="goPage('history')"><div class="bni">🕘</div><div>History</div></div>
     <div class="bn" id="bnp" onclick="goPage('payroll')"><div class="bni">💰</div><div>Payroll</div></div>
     <div class="bn" id="bnm" onclick="goPage('profile')"><div class="bni">👤</div><div>Me</div></div>
   </div>
@@ -530,6 +532,7 @@ textarea.fi{resize:vertical;min-height:72px}
 <div class="ov" id="shreg">
   <div class="sheet">
     <div class="sh"></div><div class="stit">Request Regularization</div>
+    <div class="fg"><label class="fl">Date *</label><input type="date" id="regdate" class="fi" onchange="onRegDateChange()"></div>
     <p class="tm ts mb12" id="reginfo"></p>
     <div class="fr2">
       <div class="fg"><label class="fl">Punch In Time</label><input type="time" id="regtimein" class="fi"></div>
@@ -930,6 +933,17 @@ history.replaceState({navDepth:0,type:'root',id:'root'},'');
 const cAdmin=r=>r==='admin';
 const cMgr=r=>['admin','manager'].includes(r);
 const cAppr=r=>['admin','manager'].includes(r);
+// Unified approver-scope helper. A person can approve for someone else if either
+// (a) they hold the 'manager'/'admin' role, OR (b) they are explicitly assigned as
+// that person's Reporting Manager, L1 Manager, or L2 Manager — regardless of their
+// own base role. This keeps Regularization and Leave approval visibility consistent
+// for L1/L2 approvers who may not have been given the 'manager' role label.
+function computeApprover(emD){
+  if(!CU)return{isAdmin:false,isApprover:false,codes:[]};
+  if(CU.role==='admin')return{isAdmin:true,isApprover:true,codes:null};
+  const codes=emD?Object.entries(emD).filter(([id,e])=>e.reporting_manager===CU.code||e.l1_manager===CU.code||e.l2_manager===CU.code).map(([id])=>id):[];
+  return{isAdmin:false,isApprover:cMgr(CU.role)||codes.length>0,codes};
+}
 document.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('ov')&&e.target.classList.contains('open'))e.target.classList.remove('open');});
 
 /* ══════════════════════════════════════════ EMAIL + NOTIFICATIONS (free, client-side) */
@@ -957,23 +971,34 @@ async function enablePushNotifs(){
   startInAppNotifPoll();
   return true;
 }
+async function checkInboxNow(){
+  if(!CU)return;
+  try{
+    const inbox=await dbGet(`inbox/${CU.code}`);
+    if(!inbox)return;
+    const fresh=Object.values(inbox).filter(n=>n.ts>lastInboxCheckTs);
+    if(fresh.length){
+      fresh.forEach(n=>{showLocalNotif('Kidza Attendance',n.msg);toast(n.msg,3500);});
+      if(navigator.vibrate)navigator.vibrate(200);
+      loadBadges();
+    }
+    lastInboxCheckTs=Date.now();
+  }catch(e){}
+}
 function startInAppNotifPoll(){
   if(inAppPollTimer)return;
   lastInboxCheckTs=Date.now();
-  inAppPollTimer=setInterval(async()=>{
-    if(!CU)return;
-    try{
-      const inbox=await dbGet(`inbox/${CU.code}`);
-      if(!inbox)return;
-      const fresh=Object.values(inbox).filter(n=>n.ts>lastInboxCheckTs);
-      if(fresh.length){
-        fresh.forEach(n=>{showLocalNotif('Kidza Attendance',n.msg);toast(n.msg,3500);});
-        if(navigator.vibrate)navigator.vibrate(200);
-        loadBadges();
-      }
-      lastInboxCheckTs=Date.now();
-    }catch(e){}
-  },30000);
+  // Tighter interval (15s) so alerts arrive promptly while the app is open on mobile
+  inAppPollTimer=setInterval(checkInboxNow,15000);
+  // Catch up immediately whenever the app regains focus/foreground — this is what makes
+  // "mobile notifications" feel responsive inside a WebView, since background timers are
+  // commonly throttled by the OS until the app is brought back to the front.
+  if(!window._notifFocusHooked){
+    window._notifFocusHooked=true;
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkInboxNow();});
+    window.addEventListener('focus',checkInboxNow);
+    window.addEventListener('pageshow',checkInboxNow);
+  }
 }
 function showLocalNotif(title,body){
   if('Notification' in window&&Notification.permission==='granted')new Notification(title,{body,icon:undefined});
@@ -1129,7 +1154,7 @@ async function doLogin(){
   finally{btn.innerHTML='Sign In';btn.disabled=false;}
 }
 function doLogout(){if(!confirm('Sign out?'))return;_ls.del('ka_session');CU=null;allEmps=[];document.getElementById('sa').classList.remove('active');document.getElementById('sl').classList.add('active');document.getElementById('lpass').value='';}
-function launchApp(){document.getElementById('sl').classList.remove('active');document.getElementById('sa').classList.add('active');document.getElementById('topav').textContent=ini(CU.name);goPage('dash');loadBadges();}
+function launchApp(){document.getElementById('sl').classList.remove('active');document.getElementById('sa').classList.add('active');document.getElementById('topav').textContent=ini(CU.name);goPage('dash');loadBadges();startInAppNotifPoll();}
 async function submitFgt(){const eid=document.getElementById('fgteid').value.trim().toUpperCase();if(!eid){toast('Enter Employee Code');return;}await dbPush('forgot_requests',{emp_id:eid,requested_on:today(),ts:Date.now()});closeSheet('shfgt');toast('Request submitted. HR will contact you.');}
 
 /* ══════════════════════════════════════════ SESSION RESUME ("remember me for 3 hours") */
@@ -1192,14 +1217,14 @@ async function verifyLoginOtp(){
 
 /* ══════════════════════════════════════════ NAVIGATION */
 function goPage(p){
-  const pages={dash:'pgd',attend:'pga',leave:'pgl',payroll:'pgp',profile:'pgm'};
-  const navs={dash:'bnd',attend:'bna',leave:'bnl',payroll:'bnp',profile:'bnm'};
+  const pages={dash:'pgd',attend:'pga',leave:'pgl',history:'pgh',payroll:'pgp',profile:'pgm'};
+  const navs={dash:'bnd',attend:'bna',leave:'bnl',history:'bnh',payroll:'bnp',profile:'bnm'};
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.bn').forEach(x=>x.classList.remove('active'));
   document.getElementById(pages[p]).classList.add('active');
   document.getElementById(navs[p]).classList.add('active');
   if(p==='attend')startGeoWatch();else stopGeoWatch();
-  const r={dash:renderDash,attend:renderAttend,leave:renderLeave,payroll:renderPayroll,profile:renderProfile};
+  const r={dash:renderDash,attend:renderAttend,leave:renderLeave,history:renderHistory,payroll:renderPayroll,profile:renderProfile};
   if(r[p])r[p]();
 }
 
@@ -1218,20 +1243,18 @@ async function renderDash(navMo){
     if(aD)Object.entries(aD).forEach(([d,r])=>{aMap[d]=r.status;if(!d.startsWith(moS))return;if(r.status==='P'||r.status==='REG')P++;else if(r.status==='LATE')LA++;else if(r.status==='HD')HD++;else if(r.status==='L')L++;else if(r.status==='WO')WO++;else if(r.status==='A')A++;if(r.punch_in&&r.punch_out)durs.push(hrsB(r.punch_in,r.punch_out));});
     const avgH=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1):'0.0';
     let pR=0;if(rgD)pR=Object.values(rgD).filter(r=>r.emp_id===CU.code&&r.status==='PENDING').length;
+    const approver=computeApprover(emD);
     let pendRegs=[];
-    if(cMgr(CU.role)&&rgD){
-      if(CU.role==='admin'){
-        pendRegs=Object.entries(rgD).filter(([k,r])=>r.status==='PENDING').slice(0,5);
-      }else{
-        const teamCodes=emD?Object.entries(emD).filter(([id,e])=>e.reporting_manager===CU.code||e.l1_manager===CU.code||e.l2_manager===CU.code).map(([id])=>id):[];
-        pendRegs=Object.entries(rgD).filter(([k,r])=>r.status==='PENDING'&&teamCodes.includes(r.emp_id)).slice(0,5);
-      }
+    if(approver.isApprover&&rgD){
+      pendRegs=approver.isAdmin
+        ? Object.entries(rgD).filter(([k,r])=>r.status==='PENDING').slice(0,5)
+        : Object.entries(rgD).filter(([k,r])=>r.status==='PENDING'&&approver.codes.includes(r.emp_id)).slice(0,5);
     }
     let tP=0,tA=0,tL2=0,tT=0,pLv=0;
-    if(cMgr(CU.role)&&emD){
-      const td=today();const tEmps=Object.entries(emD).filter(([id,e])=>CU.role==='admin'||e.reporting_manager===CU.code);tT=tEmps.length;
+    if(approver.isApprover&&emD){
+      const td=today();const tEmps=approver.isAdmin?Object.entries(emD):Object.entries(emD).filter(([id])=>approver.codes.includes(id));tT=tEmps.length;
       for(const[id]of tEmps){const ta=await dbGet(`attendance/${id}/${td}`);if(!ta)tA++;else if(ta.status==='P'||ta.status==='REG')tP++;else if(ta.status==='LATE'){tP++;tL2++;}else tA++;}
-      if(lvD)pLv=Object.values(lvD).filter(l=>l.status==='PENDING').length;
+      if(lvD)pLv=approver.isAdmin?Object.values(lvD).filter(l=>l.status==='PENDING').length:Object.values(lvD).filter(l=>l.status==='PENDING'&&approver.codes.includes(l.emp_id)).length;
     }
     let bday='';
     if(emD){const td2=today().slice(5);const bds=Object.values(emD).filter(e=>e.dob&&e.dob.slice(5)===td2&&e.status!=='inactive');if(bds.length)bday=`<div class="card" style="background:linear-gradient(135deg,#ffeef3,#fde8ef);border:none"><div style="font-size:22px;margin-bottom:4px">🎂</div><div style="font-weight:800;font-size:14px;color:var(--pink)">Birthday Today!</div><div class="tm ts">${bds.map(e=>`${e.name}${e.department?' ('+e.department+')':''}`).join(', ')}</div></div>`;}
@@ -1241,8 +1264,9 @@ async function renderDash(navMo){
     let cal=`<div class="mcal">`;['S','M','T','W','T','F','S'].forEach(d=>cal+=`<div class="mch">${d}</div>`);
     for(let i=0;i<fd;i++)cal+=`<div class="mcd empty"></div>`;
     for(let d=1;d<=dim;d++){const ds=`${moS}-${String(d).padStart(2,'0')}`;const s=aMap[ds]||'';const it=ds===tdS?'td':'';
-      const canReg=['HD','L','WO','A','LATE'].includes(s)&&ds<=tdS;
-      const tp=canReg?`tap" onclick="openReg('${ds}','${s}')`:'';
+      // Any real day can be tapped to regularize — with or without an existing
+      // attendance record, and for past, today, or future dates.
+      const tp=`tap" onclick="openReg('${ds}','${s||'A'}')`;
       cal+=`<div class="mcd ${s} ${it} ${tp}">${d}</div>`;}
     cal+=`</div>`;
     let qaHtml='';
@@ -1250,17 +1274,19 @@ async function renderDash(navMo){
     el.innerHTML=`<div class="padt fade">
       <div class="fb mb12"><div><div style="font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${org}</div><div style="font-size:16px;font-weight:800">${now.toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</div></div>${pR?`<span class="pill pa">${pR} pending</span>`:''}</div>
       ${bday}
-      ${cMgr(CU.role)?`<div class="sg4"><div class="st blue"><div class="sv">${tT}</div><div class="sl">Team</div></div><div class="st green"><div class="sv">${tP}</div><div class="sl">Present</div></div><div class="st red"><div class="sv">${tA}</div><div class="sl">Absent</div></div><div class="st amber"><div class="sv">${pLv}</div><div class="sl">Pend.Lv</div></div></div>`:''}
+      ${approver.isApprover?`<div class="sg4"><div class="st blue"><div class="sv">${tT}</div><div class="sl">Team</div></div><div class="st green"><div class="sv">${tP}</div><div class="sl">Present</div></div><div class="st red"><div class="sv">${tA}</div><div class="sl">Absent</div></div><div class="st amber"><div class="sv">${pLv}</div><div class="sl">Pend.Lv</div></div></div>`:''}
       <div class="sg2"><div class="st green"><div class="sv">${P+LA}</div><div class="sl">Present</div></div><div class="st teal"><div class="sv">${L}</div><div class="sl">Leave</div></div><div class="st"><div class="sv">${WO}</div><div class="sl">Week Off</div></div><div class="st amber" style="cursor:pointer" onclick="openMyRegList('HD')"><div class="sv">${HD}</div><div class="sl">Half Days</div></div></div>
       <div class="sg2"><div class="st blue"><div class="sv">${avgH}h</div><div class="sl">Avg Hours</div></div><div class="st red" style="cursor:pointer" onclick="openMyRegList('A')"><div class="sv">${A}</div><div class="sl">Absent</div></div></div>
+      <button class="btn btnp btnbl mb8" onclick="openReg('${tdS}','')">📝 New Regularization Request</button>
       <div class="card">
         <div class="calnav"><div class="calnavbtn" onclick="renderDash('${prevMo()}')">‹</div><div class="calnavlbl">${now.toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</div><div class="calnavbtn" onclick="renderDash('${nextMo()}')">›</div></div>
         ${cal}
         <div class="cr mt8" style="justify-content:center;flex-wrap:wrap;gap:5px"><span class="pill pg" style="font-size:9.5px">Present</span><span class="pill pr" style="font-size:9.5px">Absent</span><span class="pill pa" style="font-size:9.5px">HD/Late</span><span class="pill pt" style="font-size:9.5px">Leave</span><span class="pill pgr" style="font-size:9.5px">WO</span><span class="pill ppu" style="font-size:9.5px">Reg</span></div>
-        <div class="tm ts mt8 tc">Tap a coloured day (today or earlier) → Regularize</div>
+        <div class="tm ts mt8 tc">Tap any day → Regularize (past, today, or future)</div>
       </div>
       ${qaHtml}
-      ${cMgr(CU.role)?`<div class="sg3 mt8"><button class="btn btnp" style="font-size:11.5px" onclick="openFP('fpemps')">👥 Employees</button><button class="btn btnb" style="font-size:11.5px" onclick="openTeamAtt()">📊 Team</button><button class="btn btno" style="font-size:11.5px" onclick="openSheet('shrpt')">📋 Reports</button></div><button class="btn btnw btnbl mt8" style="font-size:12px" onclick="openRegReview()">📋 Regularization Review</button>`:''}
+      ${approver.isApprover?`<button class="btn btnw btnbl mt8" style="font-size:12px" onclick="openRegReview()">📋 Regularization Review</button>`:''}
+      ${cMgr(CU.role)?`<div class="sg3 mt8"><button class="btn btnp" style="font-size:11.5px" onclick="openFP('fpemps')">👥 Employees</button><button class="btn btnb" style="font-size:11.5px" onclick="openTeamAtt()">📊 Team</button><button class="btn btno" style="font-size:11.5px" onclick="openSheet('shrpt')">📋 Reports</button></div>`:''}
       ${cAdmin(CU.role)?`<div class="sg2 mt8"><button class="btn btno" onclick="openFP('fpstores');renderStList()">📍 Stores</button><button class="btn btno" onclick="openAudit()">📋 Audit</button></div><button class="btn btnw btnbl" onclick="runAPL()" style="margin-bottom:11px">💰 Run Monthly APL Credit</button>`:''}
     </div>`;
   }catch(e){el.innerHTML=`<div class="es"><div class="ei">⚠️</div><p>Failed to load. Check connection.</p></div>`;console.error(e);}
@@ -1277,15 +1303,51 @@ async function openMyRegList(status){
   if(!aD){el.innerHTML=`<div class="es"><div class="ei">📅</div><p class="tm ts">No records yet</p></div>`;openFP('fpMyRegList');return;}
   const days=Object.entries(aD).filter(([d,r])=>d.startsWith(moS)&&r.status===status).sort(([a],[b])=>a<b?1:-1);
   if(!days.length){el.innerHTML=`<div class="es"><div class="ei">✅</div><p class="tm ts">No ${(labels[status]||status).toLowerCase()} days this month</p></div>`;openFP('fpMyRegList');return;}
-  el.innerHTML=`<p class="tm ts mb12">Tap a date to submit a regularization request. Future dates can't be regularized yet.</p>`+days.map(([d,r])=>{
-    const isPast=d<=tdS;
-    return `<div class="lr" ${isPast?`style="cursor:pointer" onclick="closeFP('fpMyRegList');openReg('${d}','${status}')"`:'style="opacity:.55"'}>
+  el.innerHTML=`<p class="tm ts mb12">Tap any date to submit a regularization request.</p>`+days.map(([d,r])=>{
+    return `<div class="lr" style="cursor:pointer" onclick="closeFP('fpMyRegList');openReg('${d}','${status}')">
       <div class="lrl"><div class="lrt">${fD(d)}</div><div class="lrs">${spill(r.status)} ${r.manager_edit_reason?'· '+r.manager_edit_reason:''}</div></div>
-      <div class="lrr">${isPast?'<span class="pill ppu">Tap to Regularize</span>':'<span class="pill pgr">Not yet eligible</span>'}</div>
+      <div class="lrr"><span class="pill ppu">Tap to Regularize</span></div>
     </div>`;
   }).join('');
   openFP('fpMyRegList');
 }
+/* ══════════════════════════════════════════ HISTORY (dedicated tab — every role) */
+async function renderHistory(navMo){
+  const el=document.getElementById('pgh');
+  el.innerHTML=`<div class="pad"><p class="tc tm ts">Loading…</p></div>`;
+  try{
+    const now=new Date();
+    if(navMo!==undefined){const[ny,nm]=navMo.split('-').map(Number);now.setFullYear(ny);now.setMonth(nm-1);}
+    const yr=now.getFullYear(),mo=now.getMonth()+1,moS=`${yr}-${String(mo).padStart(2,'0')}`;
+    window._histMo=moS;
+    const prevMo=()=>{const d=new Date(yr,mo-2,1);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;};
+    const nextMo=()=>{const d=new Date(yr,mo,1);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;};
+    const [aD,lvD,rgD]=await Promise.all([dbGet(`attendance/${CU.code}`),dbGet('leaves'),dbGet('regularizations')]);
+    const items=[];
+    if(aD)Object.entries(aD).forEach(([d,r])=>{if(d.startsWith(moS))items.push({date:d,type:'attendance',data:r});});
+    if(lvD)Object.values(lvD).forEach(l=>{if(l.emp_id===CU.code&&l.from_date&&l.from_date.startsWith(moS))items.push({date:l.from_date,type:'leave',data:l});});
+    if(rgD)Object.values(rgD).forEach(r=>{if(r.emp_id===CU.code&&r.date&&r.date.startsWith(moS))items.push({date:r.date,type:'regularization',data:r});});
+    items.sort((a,b)=>b.date>a.date?1:-1);
+    const sc={PENDING:'pa',APPROVE:'pg',REJECT:'pr'};
+    const rowsHtml=items.length?items.map(it=>{
+      if(it.type==='attendance'){
+        const r=it.data;
+        return `<div class="lr"><div class="lrl"><div class="lrt">${fD(it.date)} <span class="pill pgr" style="font-size:9px">Attendance</span></div><div class="lrs">${r.punch_in?`In ${fT(r.punch_in)}`:''}${r.punch_out?` · Out ${fT(r.punch_out)}`:''}${(r.ot_hours>0)?` · OT ${r.ot_hours}h`:''}</div></div><div class="lrr">${spill(r.status)}</div></div>`;
+      }else if(it.type==='leave'){
+        const l=it.data;
+        return `<div class="lr"><div class="lrl"><div class="lrt">${fD(l.from_date)} → ${fD(l.to_date)} <span class="pill pt" style="font-size:9px">Leave · ${l.leave_type}</span></div><div class="lrs">${l.reason||''}</div></div><div class="lrr"><span class="pill ${sc[l.status]||'pgr'}">${l.status}</span></div></div>`;
+      }else{
+        const r=it.data;
+        return `<div class="lr"><div class="lrl"><div class="lrt">${fD(r.date)} <span class="pill ppu" style="font-size:9px">Regularization</span></div><div class="lrs">${r.reason||''}${r.l1_remark?' · '+r.l1_remark:''}</div></div><div class="lrr"><span class="pill ${sc[r.status]||'pgr'}">${r.status}</span></div></div>`;
+      }
+    }).join(''):`<div class="es" style="padding:24px"><div class="ei">🕘</div><p class="tm ts">No history for this month</p></div>`;
+    el.innerHTML=`<div class="padt fade">
+      <div class="calnav mb12"><div class="calnavbtn" onclick="renderHistory('${prevMo()}')">‹</div><div class="calnavlbl">${now.toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</div><div class="calnavbtn" onclick="renderHistory('${nextMo()}')">›</div></div>
+      <div class="card"><div class="chdr">My History — Attendance, Leave & Regularization</div>${rowsHtml}</div>
+    </div>`;
+  }catch(e){el.innerHTML=`<div class="es"><div class="ei">⚠️</div><p>Failed to load history</p></div>`;console.error(e);}
+}
+
 /* ══════════════════════════════════════════ ATTENDANCE */
 let clkInt=null;
 let geoWatchId=null,lastPos=null,lastPosTs=0;
@@ -1401,8 +1463,9 @@ async function renderLeave(){
     let earn=0,used=0;if(blD)Object.values(blD).forEach(r=>{earn+=r.apl_earned||0;used+=r.apl_used||0;});
     const bal=earn-used,pct=earn>0?Math.min(100,Math.round(bal/earn*100)):0;
     let myLv=lvD?Object.entries(lvD).filter(([k,l])=>l.emp_id===CU.code).sort(([,a],[,b])=>b.applied_on>a.applied_on?1:-1).slice(0,25):[];
+    const approver=computeApprover(emD);
     let pLv=[];
-    if(cAppr(CU.role)&&lvD){if(CU.role==='admin')pLv=Object.entries(lvD).filter(([k,l])=>l.status==='PENDING');else if(emD){const sb=Object.values(emD).filter(e=>e.reporting_manager===CU.code).map(e=>e.code);pLv=Object.entries(lvD).filter(([k,l])=>l.status==='PENDING'&&sb.includes(l.emp_id));}}
+    if(approver.isApprover&&lvD){pLv=approver.isAdmin?Object.entries(lvD).filter(([k,l])=>l.status==='PENDING'):Object.entries(lvD).filter(([k,l])=>l.status==='PENDING'&&approver.codes.includes(l.emp_id));}
     const lb={APL:'pp',CL:'pt',SL:'pb',EL:'pg',LWP:'pr'};
     el.innerHTML=`<div class="padt fade">
       <div class="card"><div class="fb mb8"><div class="chdr" style="margin:0">APL Balance</div><span class="pill pp">${bal} days left</span></div>
@@ -1444,12 +1507,24 @@ async function actLeave(action){
 
 /* ══════════════════════════════════════════ REGULARIZATION */
 function openReg(date,status){
-  if(date>today()){toast('Future dates can\'t be regularized');return;}
-  pReg={date,status};document.getElementById('reginfo').textContent=`Date: ${fD(date)} · Current: ${status}`;document.getElementById('regreason').value='';document.getElementById('regtimein').value='';document.getElementById('regtimeout').value='';openSheet('shreg');
+  pReg={date,status};
+  document.getElementById('regdate').value=date;
+  document.getElementById('reginfo').textContent=status?`Current recorded status: ${status}`:'No attendance record exists for this day yet — you can still request regularization.';
+  document.getElementById('regreason').value='';document.getElementById('regtimein').value='';document.getElementById('regtimeout').value='';openSheet('shreg');
+}
+// Fired when the person changes the date inside the Regularize sheet — keeps pReg in sync
+async function onRegDateChange(){
+  const d=document.getElementById('regdate').value;if(!d||!pReg)return;
+  pReg.date=d;
+  const ex=await dbGet(`attendance/${CU.code}/${d}`);
+  pReg.status=ex?ex.status:'';
+  document.getElementById('reginfo').textContent=pReg.status?`Current recorded status: ${pReg.status}`:'No attendance record exists for this day yet — you can still request regularization.';
 }
 async function submitReg(){
   if(!pReg)return;
-  if(pReg.date>today()){toast('Future dates can\'t be regularized');closeSheet('shreg');return;}
+  const dInput=document.getElementById('regdate').value;
+  if(dInput)pReg.date=dInput;
+  if(!pReg.date){toast('Select a date');return;}
   const reason=document.getElementById('regreason').value.trim();if(!reason){toast('Enter remarks / reason');return;}
   const tin=document.getElementById('regtimein').value,tout=document.getElementById('regtimeout').value;
   const ex=await dbGet('regularizations');if(ex){const dup=Object.values(ex).find(r=>r.emp_id===CU.code&&r.date===pReg.date&&r.status==='PENDING');if(dup){toast('Already pending for this date');closeSheet('shreg');return;}}
@@ -1515,10 +1590,10 @@ async function loadRegReview(){
   const filterStatus=document.getElementById('regReviewFilter').value;
   const [rgD,emps]=await Promise.all([dbGet('regularizations'),dbGet('employees')]);
   if(!rgD){el.innerHTML=`<div class="es"><div class="ei">📋</div><p>No regularizations found</p></div>`;return;}
+  const approver=computeApprover(emps);
   let entries=Object.entries(rgD);
-  if(CU.role!=='admin'){
-    const myTeam=emps?Object.entries(emps).filter(([id,e])=>e.reporting_manager===CU.code||e.l1_manager===CU.code||e.l2_manager===CU.code).map(([id])=>id):[];
-    entries=entries.filter(([k,r])=>myTeam.includes(r.emp_id)||r.l1_manager===CU.code||r.l2_manager===CU.code);
+  if(!approver.isAdmin){
+    entries=entries.filter(([k,r])=>approver.codes.includes(r.emp_id)||r.l1_manager===CU.code||r.l2_manager===CU.code);
   }
   if(moV)entries=entries.filter(([k,r])=>r.date&&r.date.startsWith(moV));
   if(filterStatus!=='ALL')entries=entries.filter(([k,r])=>r.status===filterStatus);
@@ -1738,7 +1813,8 @@ async function genAllSlips(){const now=new Date(),mo=now.getMonth()+1,yr=now.get
 async function renderProfile(){
   const el=document.getElementById('pgm');
   try{
-    const [eD,rstD,slD]=await Promise.all([dbGet(`employees/${CU.code}`),dbGet(`rosters/${CU.code}`),dbGet(`salary_slips/${CU.code}`)]);
+    const [eD,rstD,slD,emD]=await Promise.all([dbGet(`employees/${CU.code}`),dbGet(`rosters/${CU.code}`),dbGet(`salary_slips/${CU.code}`),dbGet('employees')]);
+    const approver=computeApprover(emD);
     const e=eD||CU;const ms=stores.find(s=>s.id===e.assigned_store);
     let rH=`<div class="es" style="padding:16px"><p class="tm ts">No roster assigned</p></div>`;
     if(rstD){const r=Object.values(rstD).sort((a,b)=>b.week_start>a.week_start?1:-1)[0];rH=`<div class="lr"><div class="lrl"><div class="lrt">Week of ${fD(r.week_start)}</div><div class="lrs">Shift: ${SHIFTS[r.shift||'general'].label} · WO: ${DAYS[r.week_off||0]}</div></div></div>`;}
@@ -1771,28 +1847,25 @@ async function renderProfile(){
       </div>
       <div class="card"><div class="chdr">Current Roster</div>${rH}</div>
       <div class="card">${slH}</div>
-      ${CU.role==='manager'||CU.role==='admin'?`<div id="l1RegCard" class="card mt8"></div>`:''}
+      ${approver.isApprover?`<div id="l1RegCard" class="card mt8"></div>`:''}
       <div class="card"><div class="chdr">Notifications & Theme</div>
         <div class="sbrow"><span class="ts">Dark Theme</span><button class="tt ${isDark?'on':''}" onclick="toggleTheme()"><div class="tk">${isDark?'🌙':'☀️'}</div></button></div>
         <button class="btn btno btnbl mt8" onclick="enablePushNotifs()">🔔 Enable Notifications</button>
         <div class="sbrow mt8"><span class="ts">Mobile ⇄ Desktop Sync</span><span id="meSyncLbl" class="pill ${db?'pg':'pa'}" style="font-size:9.5px">${db?'● Live':'● Local Only'}</span></div>
         <p class="tm ts mt8">${db?'Your data is synced across all devices signed in to this account.':'This device is not connected to cloud sync — data stays on this device only.'}</p>
       </div>
-      ${cAdmin(CU.role)?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><button class="btn btnp btnbl" onclick="openFP('fpemps');loadEmpList()">👥 Manage Employees</button><button class="btn btno btnbl" onclick="openFP('fpstores');renderStList()">📍 Manage Stores</button><button class="btn btno btnbl" onclick="openFP('fpbulk')">📤 Bulk Upload</button><button class="btn btno btnbl" onclick="openHolidayMgmt()">🎉 Manage Holidays</button><button class="btn btno btnbl" onclick="openAdminLeaveAdd()">📅 Add Leave (Correction)</button><button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button><button class="btn btno btnbl" onclick="openAudit()">📋 View Audit Log</button></div>`:cMgr(CU.role)?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button></div>`:''}
+      ${cAdmin(CU.role)?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><button class="btn btnp btnbl" onclick="openFP('fpemps');loadEmpList()">👥 Manage Employees</button><button class="btn btno btnbl" onclick="openFP('fpstores');renderStList()">📍 Manage Stores</button><button class="btn btno btnbl" onclick="openFP('fpbulk')">📤 Bulk Upload</button><button class="btn btno btnbl" onclick="openHolidayMgmt()">🎉 Manage Holidays</button><button class="btn btno btnbl" onclick="openAdminLeaveAdd()">📅 Add Leave (Correction)</button><button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button><button class="btn btno btnbl" onclick="openAudit()">📋 View Audit Log</button></div>`:approver.isApprover?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${cMgr(CU.role)?`<button class="btn btnb btnbl" onclick="openTeamAtt()">📊 Team Attendance</button>`:''}<button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button></div>`:''}
       <button class="btn btnr btnbl mt12" onclick="doLogout()" style="margin-bottom:30px">Sign Out</button>
     </div>`;
-    if(CU.role==='manager'||CU.role==='admin'){
+    if(approver.isApprover){
       const l1c=document.getElementById('l1RegCard');if(l1c){
         const rgD2=await dbGet('regularizations');let pR2=[];
         if(rgD2){
-          if(CU.role==='admin')pR2=Object.entries(rgD2).filter(([k,r])=>r.status==='PENDING').slice(0,5);
-          else{
-            const emps3=await dbGet('employees');
-            const teamCodes=emps3?Object.entries(emps3).filter(([id,ee])=>ee.reporting_manager===CU.code||ee.l1_manager===CU.code||ee.l2_manager===CU.code).map(([id])=>id):[];
-            pR2=Object.entries(rgD2).filter(([k,r])=>r.status==='PENDING'&&teamCodes.includes(r.emp_id)).slice(0,5);
-          }
+          pR2=approver.isAdmin
+            ? Object.entries(rgD2).filter(([k,r])=>r.status==='PENDING').slice(0,5)
+            : Object.entries(rgD2).filter(([k,r])=>r.status==='PENDING'&&approver.codes.includes(r.emp_id)).slice(0,5);
         }
-        l1c.innerHTML=`<div class="chdr">L1 — Pending Regularizations (${pR2.length})</div>${pR2.length?pR2.map(([k,r])=>`<div class="qarow"><div style="flex:1"><div style="font-weight:700;font-size:12.5px">${r.emp_name||r.emp_id}</div><div class="tm ts">${fD(r.date)} · ${(r.reason||'').slice(0,30)}</div></div><div class="qabtns"><div class="qabtn ok" onclick="quickReg('${k}','APPROVE')">✓</div><div class="qabtn no" onclick="quickReg('${k}','REJECT')">✕</div></div></div>`).join(''):`<div class="es" style="padding:14px"><p class="tm ts">No pending regularizations</p></div>`}`;
+        l1c.innerHTML=`<div class="chdr">Pending Regularizations (${pR2.length})</div>${pR2.length?pR2.map(([k,r])=>`<div class="qarow"><div style="flex:1"><div style="font-weight:700;font-size:12.5px">${r.emp_name||r.emp_id}</div><div class="tm ts">${fD(r.date)} · ${(r.reason||'').slice(0,30)}</div></div><div class="qabtns"><div class="qabtn ok" onclick="quickReg('${k}','APPROVE')">✓</div><div class="qabtn no" onclick="quickReg('${k}','REJECT')">✕</div></div></div>`).join(''):`<div class="es" style="padding:14px"><p class="tm ts">No pending regularizations</p></div>`}`;
       }
     }
   }catch(e){el.innerHTML=`<div class="es"><div class="ei">⚠️</div><p>Error</p></div>`;console.error(e);}
@@ -2339,22 +2412,20 @@ async function showNotifs(){
   if(emps){const td=today().slice(5);Object.values(emps).filter(e=>e.dob&&e.dob.slice(5)===td&&e.status!=='inactive').forEach(e=>notifs.push({icon:'🎂',msg:`${e.name}'s Birthday today!`,sub:e.department||''}));}
   const inbox=await dbGet(`inbox/${CU.code}`);
   if(inbox){Object.entries(inbox).sort((a,b)=>b[1].ts-a[1].ts).slice(0,5).forEach(([k,n])=>notifs.push({icon:n.type==='device_block'?'🔒':n.msg.includes('Approved')?' ✅':'📩',msg:n.msg,sub:new Date(n.ts).toLocaleDateString('en-IN')}));}
-  if(cAppr(CU.role)){
+  const approver=computeApprover(emps);
+  if(approver.isApprover){
     const rs=await dbGet('regularizations');
     if(rs){
-      let pending;
-      if(CU.role==='admin')pending=Object.values(rs).filter(r=>r.status==='PENDING');
-      else{
-        const teamCodes=emps?Object.entries(emps).filter(([id,e])=>e.reporting_manager===CU.code||e.l1_manager===CU.code||e.l2_manager===CU.code).map(([id])=>id):[];
-        pending=Object.values(rs).filter(r=>r.status==='PENDING'&&teamCodes.includes(r.emp_id));
-      }
+      const pending=approver.isAdmin
+        ? Object.values(rs).filter(r=>r.status==='PENDING')
+        : Object.values(rs).filter(r=>r.status==='PENDING'&&approver.codes.includes(r.emp_id));
       if(pending.length)notifs.push({icon:'📝',msg:`${pending.length} Regularization(s) pending approval`,sub:'Tap to review & approve',action:"closeSheet('shnotif');openRegReview();"});
     }
     const ls=await dbGet('leaves');
     if(ls){
-      let pendingL;
-      if(CU.role==='admin')pendingL=Object.values(ls).filter(l=>l.status==='PENDING');
-      else{const teamCodes=emps?Object.entries(emps).filter(([id,e])=>e.reporting_manager===CU.code).map(([id])=>id):[];pendingL=Object.values(ls).filter(l=>l.status==='PENDING'&&teamCodes.includes(l.emp_id));}
+      const pendingL=approver.isAdmin
+        ? Object.values(ls).filter(l=>l.status==='PENDING')
+        : Object.values(ls).filter(l=>l.status==='PENDING'&&approver.codes.includes(l.emp_id));
       if(pendingL.length)notifs.push({icon:'📅',msg:`${pendingL.length} Leave request(s) pending`,sub:'Tap to review',action:"closeSheet('shnotif');goPage('leave');"});
     }
   }
@@ -2371,7 +2442,31 @@ async function showNotifs(){
 async function openAudit(){if(!cAdmin(CU.role)){toast('Admin only');return;}const data=await dbGet('audit_log');const ac={PUNCH_IN:'pg',PUNCH_OUT:'pt',LEAVE_APPROVE:'pg',REG_APPROVE:'pg',MGR_EDIT:'pa',EMP_ADD:'pb',EMP_EDIT:'pa',SETUP:'ppu'};document.getElementById('auditbody').innerHTML=data?Object.values(data).reverse().slice(0,200).map(l=>`<div class="lr"><div class="lrl"><div class="lrt"><span class="pill ${ac[l.action]||'pgr'}" style="font-size:9.5px">${l.action}</span></div><div class="lrs">By:${l.actor}${l.target?' → '+l.target:''} ${l.old&&l.new?`(${l.old}→${l.new})`:''}</div><div class="lrs">${l.date||''}</div></div><div class="lrr ts tm">${new Date(l.ts).toLocaleDateString('en-IN')}</div></div>`).join(''):`<div class="es"><div class="ei">📋</div><p>No logs yet</p></div>`;openFP('fpaudit');}
 
 /* ══════════════════════════════════════════ BADGES */
-async function loadBadges(){if(!CU)return;try{if(cAppr(CU.role)){const ls=await dbGet('leaves');let c=0;if(ls)c=Object.values(ls).filter(l=>l.status==='PENDING').length;const b=document.getElementById('bndl');if(b){b.textContent=c;b.classList.toggle('on',c>0);}}const rs=await dbGet('regularizations');let rc=0;if(rs)rc=Object.values(rs).filter(r=>r.status==='PENDING').length;const rb=document.getElementById('bnda');if(rb){rb.textContent=rc;rb.classList.toggle('on',rc>0);}const emps=await dbGet('employees');const nd=document.getElementById('ndot');if(nd){const td=today().slice(5);const bd=emps&&Object.values(emps).some(e=>e.dob&&e.dob.slice(5)===td);nd.style.display=(bd||rc>0)?'block':'none';}}catch(e){}}
+async function loadBadges(){
+  if(!CU)return;
+  try{
+    const emps=await dbGet('employees');
+    const approver=computeApprover(emps);
+    // Leave badge (bottom nav): approvers see their team's pending count; everyone else sees their own pending leave count
+    const ls=await dbGet('leaves');
+    let lc=0;
+    if(ls){
+      if(approver.isApprover)lc=approver.isAdmin?Object.values(ls).filter(l=>l.status==='PENDING').length:Object.values(ls).filter(l=>l.status==='PENDING'&&approver.codes.includes(l.emp_id)).length;
+      else lc=Object.values(ls).filter(l=>l.emp_id===CU.code&&l.status==='PENDING').length;
+    }
+    const b=document.getElementById('bndl');if(b){b.textContent=lc;b.classList.toggle('on',lc>0);}
+    // Regularization badge (Attend tab): approvers see their team's pending count; everyone else sees their own pending count
+    const rs=await dbGet('regularizations');
+    let rc=0;
+    if(rs){
+      if(approver.isApprover)rc=approver.isAdmin?Object.values(rs).filter(r=>r.status==='PENDING').length:Object.values(rs).filter(r=>r.status==='PENDING'&&approver.codes.includes(r.emp_id)).length;
+      else rc=Object.values(rs).filter(r=>r.emp_id===CU.code&&r.status==='PENDING').length;
+    }
+    const rb=document.getElementById('bnda');if(rb){rb.textContent=rc;rb.classList.toggle('on',rc>0);}
+    const nd=document.getElementById('ndot');
+    if(nd){const td=today().slice(5);const bd=emps&&Object.values(emps).some(e=>e.dob&&e.dob.slice(5)===td);nd.style.display=(bd||rc>0||lc>0)?'block':'none';}
+  }catch(e){}
+}
 
 /* ══════════════════════════════════════════ INIT */
 document.addEventListener('DOMContentLoaded',async()=>{
