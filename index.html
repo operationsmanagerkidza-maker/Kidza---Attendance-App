@@ -789,8 +789,8 @@ let isHD=false,allEmps=[],filtEmps=[];
 let db=null;
 function setSyncDot(state){
   const dot=document.getElementById('syncDot');if(!dot)return;
-  const colors={live:'var(--green)',local:'var(--amber)',off:'var(--muted)'};
-  const titles={live:'Synced — data shared across devices',local:'Local only — not synced to other devices',off:'Sync status unknown'};
+  const colors={live:'var(--green)',local:'var(--amber)',blocked:'var(--red)',off:'var(--muted)'};
+  const titles={live:'Synced — data shared across devices',local:'Local only — not synced to other devices',blocked:'Cloud sync blocked by database permissions — data is NOT shared across devices',off:'Sync status unknown'};
   dot.style.background=colors[state]||colors.off;
   dot.title=titles[state]||titles.off;
 }
@@ -849,26 +849,53 @@ function ldbDelNode(path){
   for(let i=0;i<parts.length-1;i++){if(node[parts[i]]===undefined)return;node=node[parts[i]];}
   delete node[parts[parts.length-1]];ldbSave(tree);
 }
+// One-time, clear warning when Firebase denies access (almost always a database
+// security-rules problem, not a bug in the app) — falls back to on-device storage
+// so the app stays usable instead of breaking mid-action with a raw Firebase error.
+let fbBlockWarned=false;
+function handleFbError(err){
+  console.error('[Kidza] Firebase error — falling back to local storage.',err);
+  setSyncDot('blocked');
+  if(!fbBlockWarned){
+    fbBlockWarned=true;
+    toast('⚠️ Cloud sync is blocked (database permissions). Data will only save on this device until an admin fixes the Firebase Rules.',6000);
+  }
+}
 async function dbGet(p){
-  if(db){const s=await db.ref(p).once('value');return s.exists()?s.val():null;}
+  if(db){
+    try{const s=await db.ref(p).once('value');return s.exists()?s.val():null;}
+    catch(err){handleFbError(err);}
+  }
   return ldbGetNode(p);
 }
 async function dbSet(p,d){
-  if(db)return db.ref(p).set(d);
+  if(db){
+    try{await db.ref(p).set(d);return;}
+    catch(err){handleFbError(err);}
+  }
   ldbSetNode(p,d);
 }
 async function dbUpd(p,d){
-  if(db)return db.ref(p).update(d);
+  if(db){
+    try{await db.ref(p).update(d);return;}
+    catch(err){handleFbError(err);}
+  }
   ldbUpdNode(p,d);
 }
 async function dbPush(p,d){
-  if(db)return db.ref(p).push(d);
+  if(db){
+    try{return await db.ref(p).push(d);}
+    catch(err){handleFbError(err);}
+  }
   const k='k'+Date.now()+Math.floor(Math.random()*1000);
   ldbSetNode(p+'/'+k,d);
   return{key:k};
 }
 async function dbDel(p){
-  if(db)return db.ref(p).remove();
+  if(db){
+    try{await db.ref(p).remove();return;}
+    catch(err){handleFbError(err);}
+  }
   ldbDelNode(p);
 }
 
