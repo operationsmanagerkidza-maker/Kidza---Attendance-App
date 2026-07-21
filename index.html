@@ -426,6 +426,10 @@ textarea.fi{resize:vertical;min-height:72px}
     <div class="fptit">Salary Slip</div>
     <div style="display:flex;gap:6px"><button class="btn btnp btnsm" onclick="dlSlipPdf()">⬇️ PDF</button><div class="ib" onclick="closeFP('fpslip')">✕</div></div>
   </div>
+  <div style="padding:10px 14px;border-bottom:1.5px solid var(--line);background:var(--card);display:flex;gap:6px;align-items:center">
+    <input type="email" id="slipEmailTo" class="fi" placeholder="Send this slip to email ID…" style="flex:1">
+    <button class="btn btnb btnsm" id="slipEmailBtn" onclick="sendSlipToEmail()">✉️ Send</button>
+  </div>
   <div class="fpsc" id="slipbody"></div>
 </div>
 <!-- LETTERS -->
@@ -987,11 +991,19 @@ let notifPermAsked=false;
 let inAppPollTimer=null,lastInboxCheckTs=0;
 async function enablePushNotifs(){
   if('Notification' in window){
-    const p=await Notification.requestPermission();
-    if(p==='granted'){await dbUpd(`employees/${CU.code}`,{notify_push:true});CU.notify_push=true;toast('🔔 Mobile notifications enabled');startInAppNotifPoll();return true;}
-    toast('Notification permission denied');return false;
+    try{
+      const p=await Notification.requestPermission();
+      if(p==='granted'){await dbUpd(`employees/${CU.code}`,{notify_push:true});CU.notify_push=true;toast('🔔 Mobile notifications enabled');startInAppNotifPoll();return true;}
+      // Denied or dismissed — still keep the in-app poller running so alerts show while the app is open
+      await dbUpd(`employees/${CU.code}`,{notify_push:true});CU.notify_push=true;
+      toast('🔔 In-app alerts enabled (browser notification permission was not granted)');
+      startInAppNotifPoll();
+      return true;
+    }catch(e){
+      console.warn('[Kidza] Notification.requestPermission failed — using in-app poller instead.',e);
+    }
   }
-  // Browser push isn't supported in this WebView (common inside MIT App Inventor / embedded webviews).
+  // Browser push isn't available in this WebView (common inside MIT App Inventor / embedded webviews).
   // Fall back to a lightweight in-app poller instead of showing an error.
   await dbUpd(`employees/${CU.code}`,{notify_push:true});CU.notify_push=true;
   toast('🔔 In-app alerts enabled — this device doesn\'t support browser push, so alerts show while the app is open');
@@ -1351,28 +1363,44 @@ async function renderHistory(navMo){
     const nextMo=()=>{const d=new Date(yr,mo,1);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;};
     const [aD,lvD,rgD]=await Promise.all([dbGet(`attendance/${CU.code}`),dbGet('leaves'),dbGet('regularizations')]);
     const items=[];
-    if(aD)Object.entries(aD).forEach(([d,r])=>{if(d.startsWith(moS))items.push({date:d,type:'attendance',data:r});});
-    if(lvD)Object.values(lvD).forEach(l=>{if(l.emp_id===CU.code&&l.from_date&&l.from_date.startsWith(moS))items.push({date:l.from_date,type:'leave',data:l});});
-    if(rgD)Object.values(rgD).forEach(r=>{if(r.emp_id===CU.code&&r.date&&r.date.startsWith(moS))items.push({date:r.date,type:'regularization',data:r});});
+    if(aD)Object.entries(aD).forEach(([d,r])=>{if(d.startsWith(moS))items.push({date:d,type:'attendance',key:d,data:r});});
+    if(lvD)Object.entries(lvD).forEach(([k,l])=>{if(l.emp_id===CU.code&&l.from_date&&l.from_date.startsWith(moS))items.push({date:l.from_date,type:'leave',key:k,data:l});});
+    if(rgD)Object.entries(rgD).forEach(([k,r])=>{if(r.emp_id===CU.code&&r.date&&r.date.startsWith(moS))items.push({date:r.date,type:'regularization',key:k,data:r});});
     items.sort((a,b)=>b.date>a.date?1:-1);
     const sc={PENDING:'pa',APPROVE:'pg',REJECT:'pr'};
+    const isAdmin=cAdmin(CU.role);
+    const delBtn=(type,key,date)=>isAdmin?`<button class="btn btnr btnsm" style="margin-top:4px" onclick="deleteHistoryItem('${type}','${key.replace(/'/g,"")}','${date}')">🗑 Delete</button>`:'';
     const rowsHtml=items.length?items.map(it=>{
       if(it.type==='attendance'){
         const r=it.data;
-        return `<div class="lr"><div class="lrl"><div class="lrt">${fD(it.date)} <span class="pill pgr" style="font-size:9px">Attendance</span></div><div class="lrs">${r.punch_in?`In ${fT(r.punch_in)}`:''}${r.punch_out?` · Out ${fT(r.punch_out)}`:''}${(r.ot_hours>0)?` · OT ${r.ot_hours}h`:''}</div></div><div class="lrr">${spill(r.status)}</div></div>`;
+        return `<div class="lr"><div class="lrl"><div class="lrt">${fD(it.date)} <span class="pill pgr" style="font-size:9px">Attendance</span></div><div class="lrs">${r.punch_in?`In ${fT(r.punch_in)}`:''}${r.punch_out?` · Out ${fT(r.punch_out)}`:''}${(r.ot_hours>0)?` · OT ${r.ot_hours}h`:''}</div></div><div class="lrr" style="align-items:flex-end">${spill(r.status)}${delBtn('attendance',it.key,it.date)}</div></div>`;
       }else if(it.type==='leave'){
         const l=it.data;
-        return `<div class="lr"><div class="lrl"><div class="lrt">${fD(l.from_date)} → ${fD(l.to_date)} <span class="pill pt" style="font-size:9px">Leave · ${l.leave_type}</span></div><div class="lrs">${l.reason||''}</div></div><div class="lrr"><span class="pill ${sc[l.status]||'pgr'}">${l.status}</span></div></div>`;
+        return `<div class="lr"><div class="lrl"><div class="lrt">${fD(l.from_date)} → ${fD(l.to_date)} <span class="pill pt" style="font-size:9px">Leave · ${l.leave_type}</span></div><div class="lrs">${l.reason||''}</div></div><div class="lrr" style="align-items:flex-end"><span class="pill ${sc[l.status]||'pgr'}">${l.status}</span>${delBtn('leave',it.key,it.date)}</div></div>`;
       }else{
         const r=it.data;
-        return `<div class="lr"><div class="lrl"><div class="lrt">${fD(r.date)} <span class="pill ppu" style="font-size:9px">Regularization</span></div><div class="lrs">${r.reason||''}${r.l1_remark?' · '+r.l1_remark:''}</div></div><div class="lrr"><span class="pill ${sc[r.status]||'pgr'}">${r.status}</span></div></div>`;
+        return `<div class="lr"><div class="lrl"><div class="lrt">${fD(r.date)} <span class="pill ppu" style="font-size:9px">Regularization</span></div><div class="lrs">${r.reason||''}${r.l1_remark?' · '+r.l1_remark:''}</div></div><div class="lrr" style="align-items:flex-end"><span class="pill ${sc[r.status]||'pgr'}">${r.status}</span>${delBtn('regularization',it.key,it.date)}</div></div>`;
       }
     }).join(''):`<div class="es" style="padding:24px"><div class="ei">🕘</div><p class="tm ts">No history for this month</p></div>`;
     el.innerHTML=`<div class="padt fade">
       <div class="calnav mb12"><div class="calnavbtn" onclick="renderHistory('${prevMo()}')">‹</div><div class="calnavlbl">${now.toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</div><div class="calnavbtn" onclick="renderHistory('${nextMo()}')">›</div></div>
-      <div class="card"><div class="chdr">My History — Attendance, Leave & Regularization</div>${rowsHtml}</div>
+      <div class="card"><div class="chdr">My History — Attendance, Leave & Regularization${isAdmin?' (Admin can delete entries)':''}</div>${rowsHtml}</div>
     </div>`;
   }catch(e){el.innerHTML=`<div class="es"><div class="ei">⚠️</div><p>Failed to load history</p></div>`;console.error(e);}
+}
+// Admin-only: permanently remove a history entry (attendance day / leave / regularization record)
+async function deleteHistoryItem(type,key,date){
+  if(!cAdmin(CU.role)){toast('Admin only');return;}
+  if(!confirm(`Delete this ${type} record for ${fD(date)}? This cannot be undone.`))return;
+  try{
+    if(type==='attendance')await dbDel(`attendance/${CU.code}/${key}`);
+    else if(type==='leave')await dbDel(`leaves/${key}`);
+    else if(type==='regularization')await dbDel(`regularizations/${key}`);
+    await dbPush('audit_log',{action:'HISTORY_DELETE',actor:CU.code,target:CU.code,note:`${type}:${key}`,date,ts:Date.now()});
+    toast('🗑 Deleted');
+    renderHistory(window._histMo);
+    loadBadges();
+  }catch(e){toast('Delete failed: '+e.message);}
 }
 
 /* ══════════════════════════════════════════ ATTENDANCE */
@@ -1585,6 +1613,7 @@ async function actReg(action){
   }else{
     await dbUpd(`attendance/${r.emp_id}/${r.date}`,{reg_rejected:true,carry_forward:true});
     await dbPush(`inbox/${r.emp_id}`,{msg:`Your regularization for ${fD(r.date)} was Rejected`,from:CU.code,ts:Date.now(),read:false});
+    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);if(empD?.email)trySendEmail(empD.email,'Regularization Rejected — Kidza',`Your regularization request for ${fD(r.date)} was rejected.${rk?' Remark: '+rk:''}`);}
   }
   closeSheet('shregap');toast(action==='APPROVE'?'Approved — Marked Present ✅':'Rejected');renderDash();renderLeave();loadBadges();
 }
@@ -1596,9 +1625,11 @@ async function quickReg(key,action){
     await dbPush('audit_log',{action:'REG_APPROVE',actor:CU.code,target:r.emp_id,date:r.date,old:r.original_status,ts:Date.now()});
     await checkAPL(r.emp_id,r.date.slice(0,7));
     await dbPush(`inbox/${r.emp_id}`,{msg:`Your regularization for ${fD(r.date)} was Approved ✅`,from:CU.code,ts:Date.now(),read:false});
+    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);if(empD?.email)trySendEmail(empD.email,'Regularization Approved — Kidza',`Your regularization request for ${fD(r.date)} has been approved.`);}
   }else{
     await dbUpd(`attendance/${r.emp_id}/${r.date}`,{reg_rejected:true,carry_forward:true});
     await dbPush(`inbox/${r.emp_id}`,{msg:`Your regularization for ${fD(r.date)} was Rejected`,from:CU.code,ts:Date.now(),read:false});
+    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);if(empD?.email)trySendEmail(empD.email,'Regularization Rejected — Kidza',`Your regularization request for ${fD(r.date)} was rejected.`);}
   }
   toast(action==='APPROVE'?'Approved — Present ✅':'Rejected');renderDash();loadBadges();
 }
@@ -1805,6 +1836,8 @@ async function showSlip(empCode,month,year){
   </div>
 </div>`;
   openFP('fpslip');
+  window._curSlip={empCode,month,year,emp,org,mn};
+  const emailInp=document.getElementById('slipEmailTo');if(emailInp)emailInp.value=emp.email||'';
   await dbSet(`salary_slips/${empCode}/${year}_${String(month).padStart(2,'0')}`,{month,year,gross:s.gross.toFixed(0),deductions:s.totalDed,net:s.net,generated_on:today()});
 }
 /* Shared blob-download helper — works reliably from inside MIT App Inventor's
@@ -1815,11 +1848,18 @@ function triggerBlobDownload(blob,filename){
   const a=document.createElement('a');
   a.href=url;a.download=filename;a.style.display='none';
   document.body.appendChild(a);a.click();
-  setTimeout(()=>{try{document.body.removeChild(a);}catch(e){}URL.revokeObjectURL(url);},1500);
+  // Some embedded WebViews (e.g. MIT App Inventor's WebViewer) silently ignore the
+  // anchor-click download trick since they have no download manager. Also open the
+  // blob URL directly as a fallback — many WebViews hand blob: URLs off to the native
+  // OS (e.g. a "save/open with" chooser), which succeeds even when the anchor doesn't.
+  try{window.open(url,'_blank');}catch(e){}
+  setTimeout(()=>{try{document.body.removeChild(a);}catch(e){}URL.revokeObjectURL(url);},4000);
 }
-async function dlSlipPdf(){
-  const area=document.getElementById('sprintarea');if(!area)return;
-  if(!(window.jspdf&&window.html2canvas)){toast('PDF engine not loaded — check your connection');return;}
+// Shared PDF generation for the Salary Slip — used by both the direct download
+// button and the "send to email" flow so they always produce the identical PDF.
+async function generateSlipPdfBlob(){
+  const area=document.getElementById('sprintarea');if(!area)return null;
+  if(!(window.jspdf&&window.html2canvas)){toast('PDF engine not loaded — check your connection');return null;}
   try{
     const canvas=await html2canvas(area,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
     const imgData=canvas.toDataURL('image/png');
@@ -1829,10 +1869,59 @@ async function dlSlipPdf(){
     const iw=canvas.width,ih=canvas.height,ratio=pw/iw;
     const imgH=ih*ratio;
     pdf.addImage(imgData,'PNG',0,0,pw,imgH);
-    const blob=pdf.output('blob');
-    triggerBlobDownload(blob,'Kidza_Salary_Slip.pdf');
-    toast('⬇️ Salary slip PDF downloading…');
-  }catch(e){console.error('PDF error',e);toast('PDF generation failed: '+e.message);}
+    return pdf.output('blob');
+  }catch(e){console.error('PDF error',e);toast('PDF generation failed: '+e.message);return null;}
+}
+async function dlSlipPdf(){
+  const blob=await generateSlipPdfBlob();if(!blob)return;
+  triggerBlobDownload(blob,'Kidza_Salary_Slip.pdf');
+  toast('⬇️ Salary slip PDF downloading…');
+}
+// Send the currently-open salary slip to any email ID the person types in —
+// separate from (and never overwrites) the employee's registered login email.
+async function sendSlipToEmail(){
+  const to=document.getElementById('slipEmailTo').value.trim();
+  if(!to){toast('Enter an email ID to send to');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)){toast('Enter a valid email ID');return;}
+  const ctx=window._curSlip||{};
+  const btn=document.getElementById('slipEmailBtn');
+  btn.innerHTML='<div class="spin"></div>';btn.disabled=true;
+  try{
+    const blob=await generateSlipPdfBlob();
+    if(!blob){return;}
+    let sent=false;
+    // Best-effort real attachment via EmailJS's sendForm (needs a configured
+    // EmailJS Service + Template that accepts an "attachment" file field, and
+    // works on EmailJS plans that support attachments).
+    if(EMAILJS_PUBLIC_KEY&&EMAILJS_SERVICE_ID&&EMAILJS_TEMPLATE_ID&&window.emailjs&&window.DataTransfer){
+      try{
+        const file=new File([blob],'Kidza_Salary_Slip.pdf',{type:'application/pdf'});
+        const dt=new DataTransfer();dt.items.add(file);
+        const form=document.createElement('form');form.style.display='none';
+        const mk=(name,val)=>{const i=document.createElement('input');i.name=name;i.value=val;form.appendChild(i);};
+        mk('to_email',to);
+        mk('subject',`Salary Slip — ${ctx.mn||''} ${ctx.year||''}`);
+        mk('message',`Please find attached the salary slip for ${ctx.mn||''} ${ctx.year||''}.`);
+        const fileInp=document.createElement('input');fileInp.type='file';fileInp.name='attachment';fileInp.files=dt.files;form.appendChild(fileInp);
+        document.body.appendChild(form);
+        await emailjs.sendForm(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,form,EMAILJS_PUBLIC_KEY);
+        document.body.removeChild(form);
+        sent=true;
+      }catch(e){console.warn('EmailJS attachment send failed, falling back to mail app',e);}
+    }
+    if(sent){
+      toast('✅ Salary slip emailed to '+to);
+    }else{
+      // No attachment-capable email service configured — download the PDF locally
+      // and open the device's mail app pre-filled, so the person can attach it manually.
+      triggerBlobDownload(blob,'Kidza_Salary_Slip.pdf');
+      const subject=encodeURIComponent(`Salary Slip — ${ctx.mn||''} ${ctx.year||''}`);
+      const body=encodeURIComponent(`Hi,\n\nThe salary slip PDF for ${ctx.mn||''} ${ctx.year||''} has been downloaded on this device — please attach it to this email before sending.\n\n— Kidza Attendance`);
+      window.open(`mailto:${to}?subject=${subject}&body=${body}`,'_blank');
+      toast('📎 Email attachments aren\'t configured yet — downloaded the PDF and opened your mail app so you can attach it manually.',6000);
+    }
+  }catch(e){toast('Send failed: '+e.message);}
+  finally{btn.innerHTML='✉️ Send';btn.disabled=false;}
 }
 async function showTax(){const now=new Date(),yr=now.getFullYear();const aD=await dbGet(`attendance/${CU.code}`);let tot=0;for(let m=1;m<=12;m++){const s=calcPay(CU,aD,m,yr);tot+=s.net;}const taxA=tot>1000000?(tot-1000000)*0.30+125000+100000:tot>500000?(tot-500000)*0.20+25000:tot>250000?(tot-250000)*0.05:0;toast(`FY ${yr}: Income ₹${tot.toLocaleString('en-IN',{maximumFractionDigits:0})} | Tax ₹${taxA.toLocaleString('en-IN',{maximumFractionDigits:0})}`);}
 async function genAllSlips(){const now=new Date(),mo=now.getMonth()+1,yr=now.getFullYear();const emps=await dbGet('employees');if(!emps)return;for(const[code]of Object.entries(emps)){await dbSet(`salary_slips/${code}/${yr}_${String(mo).padStart(2,'0')}`,{month:mo,year:yr,emp_code:code,generated_on:today()});}toast('✅ All salary slips generated');}
