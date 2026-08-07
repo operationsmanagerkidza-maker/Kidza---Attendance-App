@@ -26,8 +26,8 @@ button:active{opacity:.82;transform:scale(.97)}
 .tb-left{display:flex;align-items:center}
 .tb-brand{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;justify-self:center}
 .tb-brand-row{display:flex;align-items:center;gap:7px}
-.tb-logo{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
-.tb-logo img{width:100%;height:100%;object-fit:cover;display:block}
+.tb-logo{height:32px;width:auto;max-width:110px;border-radius:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:visible}
+.tb-logo img{height:100%;width:auto;object-fit:contain;display:block}
 .tb-logo-t{font-size:19px;font-weight:900;color:#e8194b;line-height:1}
 .tb-name{font-size:14px;font-weight:800;color:var(--pink);letter-spacing:-.3px;line-height:1}
 .tb-sub{font-size:8.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
@@ -148,8 +148,8 @@ textarea.fi{resize:vertical;min-height:72px}
 .fpsc::-webkit-scrollbar{display:none}
 #sl{background:var(--bg);align-items:center;justify-content:center;padding:28px 20px}
 .lhero{text-align:center;margin-bottom:32px}
-.llogo{width:90px;height:90px;border-radius:20px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:var(--shm)}
-.llogo img{width:100%;height:100%;object-fit:cover;display:block}
+.llogo{height:78px;width:auto;max-width:280px;border-radius:0;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;overflow:visible;box-shadow:none}
+.llogo img{height:100%;width:auto;object-fit:contain;display:block}
 .llot{font-size:38px;font-weight:900;color:#e8194b}
 .lbrand{font-size:26px;font-weight:900;color:var(--pink);letter-spacing:-.5px}
 .ltag{font-size:12.5px;color:var(--muted);margin-top:4px}
@@ -255,8 +255,6 @@ textarea.fi{resize:vertical;min-height:72px}
       <button class="btn btnp" id="lbtn" type="submit">Sign In</button>
     </form>
     <div class="lhint" id="lhint" style="display:none">First time? <a onclick="showWizard()">Setup admin →</a></div>
-    <div class="lhint"><a onclick="openOtpLogin()">First login? Verify with Email OTP →</a></div>
-    <div class="lhint"><a onclick="openSheet('shfgt')" style="color:var(--muted)">Forgot password?</a></div>
   </div>
 </div>
 <!-- EMAIL OTP FIRST LOGIN -->
@@ -360,8 +358,9 @@ textarea.fi{resize:vertical;min-height:72px}
       </div>
       <div class="fr2">
         <div class="fg"><label class="fl">Mobile *</label><input id="em" type="tel" class="fi" placeholder="9999999999"></div>
-        <div class="fg"><label class="fl">Email</label><input id="ee" type="email" class="fi" placeholder="name@email.com"></div>
+        <div class="fg"><label class="fl">Email (login/OTP)</label><input id="ee" type="email" class="fi" placeholder="name@email.com"></div>
       </div>
+      <div class="fg"><label class="fl">Notification Email <span class="tm" style="font-weight:400">(for regularization alerts &amp; salary slips — optional, falls back to Email above)</span></label><input id="enotify" type="email" class="fi" placeholder="name@email.com"></div>
       <div class="fr2">
         <div class="fg"><label class="fl">Designation</label><input id="ed" class="fi" placeholder="Sales Executive"></div>
         <div class="fg"><label class="fl">Department</label><input id="ept" class="fi" placeholder="Sales"></div>
@@ -400,9 +399,17 @@ textarea.fi{resize:vertical;min-height:72px}
         <div class="fg"><label class="fl">IFSC Code</label><input id="eifsc" class="fi" placeholder="SBIN0001234" autocapitalize="characters"></div>
       </div>
       <div class="fg"><label class="fl">Password *</label><input id="epass" type="password" class="fi" placeholder="Set login password"></div>
-      <div class="fr2">
+      <div class="fr3">
         <div class="fg"><label class="fl">L1 Manager</label><select id="el1" class="fi"><option value="">None</option></select></div>
         <div class="fg"><label class="fl">L2 Manager</label><select id="el2" class="fi"><option value="">None</option></select></div>
+        <div class="fg"><label class="fl">L3 Manager</label><select id="el3" class="fi"><option value="">None</option></select></div>
+      </div>
+      <div class="fg"><label class="fl">Notice Period (days) <span class="tm" style="font-weight:400">— used to auto-compute the last working day on resignation; admin can change anytime</span></label><input id="enoticedays" type="number" class="fi" placeholder="30" min="0"></div>
+      <div class="fg"><label class="fl">Hiring Status</label>
+        <select id="ehire" class="fi">
+          <option value="new">New — must complete Onboarding before using Attendance/Regularization/etc.</option>
+          <option value="existing">Existing — can use the app immediately, but still needs to complete Onboarding</option>
+        </select>
       </div>
       <!-- Device Binding -->
       <div class="lr" style="padding:11px 0 4px;border-top:1px solid var(--line);margin-top:6px">
@@ -417,7 +424,8 @@ textarea.fi{resize:vertical;min-height:72px}
         <p class="tm ts mt8" id="eDeviceInfo"></p>
       </div>
     </div>
-    <button class="btn btnp btnbl" id="sebtn" onclick="saveEmployee()" style="margin-bottom:30px">Save Employee</button>
+    <button class="btn btnp btnbl" id="sebtn" onclick="saveEmployee()">Save Employee</button>
+    <button class="btn btnr btnbl" id="edelbtn" onclick="deleteEmployee()" style="display:none;margin-top:8px;margin-bottom:30px">🗑 Delete Employee</button>
   </div>
 </div>
 <!-- SALARY SLIP -->
@@ -465,7 +473,7 @@ textarea.fi{resize:vertical;min-height:72px}
 </div>
 <!-- AUDIT LOG -->
 <div class="fp" id="fpaudit">
-  <div class="fptop"><div class="fptit">📋 Audit Log</div><div class="ib" onclick="closeFP('fpaudit')">✕</div></div>
+  <div class="fptop"><div class="fptit">📋 Audit Log</div><div style="display:flex;gap:6px;align-items:center"><label style="display:flex;align-items:center;gap:4px;font-size:11px" class="tm"><input type="checkbox" id="auditSelAll" onchange="toggleAllAudit(this.checked)" style="width:15px;height:15px;accent-color:var(--pink)"> All</label><button class="btn btnr btnsm" onclick="deleteSelectedAudit()">🗑 Delete Selected</button><div class="ib" onclick="closeFP('fpaudit')">✕</div></div></div>
   <div class="fpsc" id="auditbody"></div>
 </div>
 <!-- MANAGE STORES -->
@@ -719,6 +727,51 @@ textarea.fi{resize:vertical;min-height:72px}
   </div>
 </div>
 <div id="exittoast" style="position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:rgba(26,29,46,.92);color:#fff;padding:10px 20px;border-radius:22px;font-size:12.5px;font-weight:600;z-index:999;opacity:0;pointer-events:none;transition:opacity .3s">Press back again to exit</div>
+<!-- HISTORICAL SALARY SLIP ENTRY (Admin) -->
+<div class="ov" id="shHistSlip">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">🗂 Add Old Salary Slip</div>
+    <p class="tm ts mb12">For months before this system was in use. This slip will show exactly what you enter here — it is not recalculated from attendance.</p>
+    <div class="fg"><label class="fl">Employee</label><select id="hsEmp" class="fi"></select></div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">Month</label><select id="hsMonth" class="fi"></select></div>
+      <div class="fg"><label class="fl">Year</label><input type="number" id="hsYear" class="fi" placeholder="2025"></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">Gross Earnings (₹)</label><input type="number" id="hsGross" class="fi" placeholder="25000"></div>
+      <div class="fg"><label class="fl">Total Deductions (₹)</label><input type="number" id="hsDed" class="fi" placeholder="2500"></div>
+    </div>
+    <div class="fg"><label class="fl">Net Pay (₹)</label><input type="number" id="hsNet" class="fi" placeholder="22500"></div>
+    <div class="fg"><label class="fl">Notes (optional)</label><input id="hsNotes" class="fi" placeholder="e.g. Migrated from previous system"></div>
+    <div class="btngr"><button class="btn btno" onclick="closeSheet('shHistSlip')">Cancel</button><button class="btn btnp" onclick="saveHistSlip()">Save</button></div>
+  </div>
+</div>
+<!-- RESIGNATION SUBMISSION -->
+<div class="ov" id="shResign">
+  <div class="sheet">
+    <div class="sh"></div><div class="stit">🚪 Submit Resignation</div>
+    <div class="card" style="padding:11px 13px;margin-bottom:13px" id="resignNoticeInfo"></div>
+    <div class="fg"><label class="fl">Reason for Leaving *</label><textarea id="resignReason" class="fi" placeholder="Briefly share your reason…"></textarea></div>
+    <div class="fg"><label class="fl">Exit Feedback / Comments</label><textarea id="resignFeedback" class="fi" placeholder="Any feedback about your time here…"></textarea></div>
+    <div class="fg"><label class="fl">Overall Experience (1–5)</label>
+      <div class="cr" id="resignRatingCr">
+        <div class="chip" onclick="setResignRating(1)">1</div><div class="chip" onclick="setResignRating(2)">2</div><div class="chip" onclick="setResignRating(3)">3</div><div class="chip" onclick="setResignRating(4)">4</div><div class="chip" onclick="setResignRating(5)">5</div>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Requested Last Working Day *</label><input type="date" id="resignLwd" class="fi"></div>
+    <div class="btngr"><button class="btn btno" onclick="closeSheet('shResign')">Cancel</button><button class="btn btnp" onclick="submitResignation()">Submit</button></div>
+  </div>
+</div>
+<!-- SEPARATION REVIEW (L1/L2/L3/Admin) -->
+<div class="fp" id="fpSepReview">
+  <div class="fptop"><div class="fptit">🚪 Separation Review</div><div class="ib" onclick="closeFP('fpSepReview')">✕</div></div>
+  <div class="fpsc" id="sepReviewBody"></div>
+</div>
+<!-- HIRING & ONBOARDING -->
+<div class="fp" id="fpOnboard">
+  <div class="fptop"><div class="fptit">🧾 Hiring &amp; Onboarding</div><div class="ib" id="onboardCloseBtn" onclick="closeFP('fpOnboard')">✕</div></div>
+  <div class="fpsc" id="onboardBody"></div>
+</div>
 <div id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -733,7 +786,7 @@ textarea.fi{resize:vertical;min-height:72px}
 const ADMIN_PIN="7391"; // Change this 4-digit PIN — only you know it
 
 // Logo (used for both the login screen and the topbar) — set once, reused everywhere
-const LOGO_B64="data:image/jpeg;base64,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";
+const LOGO_B64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAEBCAMAAACXEoaAAAAAflBMVEXfUF7ZFy7hc4LgL0HegZL9/PzZLEHYJzzaM0bVHDL66Or0x8z31dnjZ3bcRVfph5PmeIbvp7DhWGjxs7rtmqTyu8LgR1nrkpzdVWX43eHlcX3gOUvdTWDeZXPgTWHYMD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/byT6AAAAIHRSTlP//////////////////////////////////////////3Fe9GAAAC55SURBVHja7X2JYuM4rq173ovATbvkLbX8/19ekZQo7iJt2eUk1r0zXVPtxJIOCQIHB8Dh43196+vwfgVvgN/XG+D39Qb4fb0Bfu5FaD/UjbjqoafkDfB3utjQIdAv9NnVI3kD/D0uep3QLYoCaVcxoXw8kTfAX/8aywI4otYlQD6Ob4C/unEuwQfvsp+hfQP8pa+hgMJ/zaYa6BvgL+w5l7hARQThAkH5Bvjrnr4IUBDf+QJE3gB/0audTt9i80KXN8Bf8zrhbXThvYO/rnuVgC+HuHqfwfeFKf2JE4R1+2RysE8xz5OjBc0b4JuvS9scEGB5ASr7J66rokg5fyeA++8NMGHiesDuIm2JBMew0AwA0D0t6KySNvAUJX0vC60DTOjQdBWSrgb6Vdb9nu4kbRCGYkV3todQP+c567QDuEB4+J4A07oTdLtyNUSGpRx2wpiVEHjD+CkIX+QzJbhYvz6+JcCksLeXpO0AXXcwopemCNC/3Cb2L7SBCxi/KcAo5FPucE6eYvzRdOg93psmCNIM9DfjKQ2AUSDwn/b2XVaUHjHEX+rjT70+dQMX7KcBPMf+t2/iepMefILf2uCfuoGjJhoWz2Qy1DdmSVm3ze6jx597XaqF7n8UwDrMtzm7LUqIPh/PHc1PB9ssJfmuALPAEy/XbeFMAyns0eNtNEuMgeH68XMBLnCulSYdRomuzYP5LJZqodufATCs8BagkR95Hib9hETL+PAXmwhwgdjP2sH6/uUwdFmRCUDq/kVwerSJTrqV70ZDpwMM+T5mm3b8zr/4wXQlQT81SIoADPN/QaHMNBwzol+UjO/j3ehUgIcftoPdTEvqFm5wOrxP2MFpcTD6djy0BjCFUAR8iw27ZuH7BO81bcF9L7VdAsC3KkrLPHyfsHXaFIcv4wT6rgCnJdM6yMP3CTrGlEP4W9IcGQALThqfkvDN3MBPyPmX24vu4cHaF9jBKYs8H99nMMAtTgCYvk30NteRbZ8RPIM/uqTYaPKNAU4TDW/7ISXkbl/cBd8rYYzs9dK3A6U8ou6rAdymAhx/4U0WvlwQVPkjJNLX5ZGrwo5dvYvlHLbu7LsJ3m8FeIu/SsZWyL3+tL4FIwXUwFWAgkUrd9jGZFt2MLwBLuCwsUtQIroTcOiPf2+yhvfPQPpK2IMjLuFH+lh5AMdfdZ9GlvDKFaia1u9akQawsU72aqvQbsmyvmOucAV4SAQ4EiaxpI07YVtG6s5G5JFg7rKFN3PC35LHUgCfEgEOUxLkE7Z9KnRtWfwQl8mrRyRqO3jVXCHpTycnjdPXdUv2A7hOBHi4IQBexJkA9cYdN7NxNhHmNTQ7PGq8/PsfOtHt5HNgOBrHEOv4UYbGJwNchB2ROkoVCdXeny0vRiYpwHMVl0fb6H/nRNfSowS96o1JNSrs4PhlAQxBWZZy0qSOy8U3oYyw8eG7YyLvF7yiJHp5c5PtWtE8T6+Cc//FeS+A0xiK4FmoM53gquz46btpbUSHBZA/baA7PecuLGLMyEwO4L9xogmvW547dHXG65TVf/1zAS4jd6lZY5fT2OYqmC4ygMLYv/uo4cbIDkb/ioluYe2WqZKxJ6z+qtkJ4CQOOXhORX+ab9+EOLabTx1T8Lenhxsjs9C/yvY3OsDN+j6Xv+oMbp48GmAa809D9dXQJZygcz5vkfeZck68j6QnEiihf5VqKFdWZ70HCbB1KJJm+ruGPBLgQOJ2OYDBq3GHtDz6GRytLuydyDOrwOEl5Bydpi5WaK6oaw0HeKL9Blt22IpiN4/gubhaAOJ60PiY5OkbXhqYftpuIWoLEYDrFwL4tPRD0Nad/Lt8Y5YBcIASnje/ueeWn0jFpgEzpoJHpAEYvEAYTKgxPUDzbtftSYul4cWKp/Rj84+SnB3sjUZPKvhwAJ68q1Qvv9LMPBRGLI3gf3u92wib+qS6s1EkQlGjlmy/Ni/RLNUCx0rhzYsTFdVtAJ9TRGnlhm017XNScGT/FrDCaNi1d2TEy3pOsvAq+4TBSvuQSnW+0dTDdPncuMZ46DYB22FhedBNQRKpgu21IcPqLbkOj53fk2JyXEntYHgCz0E6rKZE4NIIhPmtYG1zUoSnN6F1zqALTY9uA7hKKBXzWeigxn0KLDP2xG/FdNqeOMI7JgEiBQ7PqGpYX5YR9M6sBhiic9I2jX5qsKU74I0murot2R9So+aY59URL3xu2p7x6cl/u/CcHsKtFvLqKoaStygrtvyVDt+mIT9skjwKsj5EL3oWQ5HllK7urWOfuz1ffFgd/QQiS562ms+s1lTbIXRs2JabIuLgbA35wdhCMbLW86sDB3CeeTbXtrWo9uWXguLgZxBZLej4TlZD24wp6uCx4qdytquQvIM9TICI4RynKNM86z6Wa+d3DlIAaf4+6KHY4/UcV/MhAXCm1SDtLRqPVIA9jVJa5fpasGSTQg32Hr+7s0tUB1hi/DyAPf2Mn5GhTATYY8OYtzleBrkRj09hWwGSD3CB/EnNJwh23Fd8X9UsqcshHeDLDUGwl/yajt8blmWHQfa6VZJ4DN0DqCVmOM4GW/ZwKpp6TqDhnvWCMS6TAd7u4OAIHnwSgRuOX3m3Y91VMLf651TeTvUqqV5/Wl3svceD+7LuWFU1ThzSlgawa6E9Dim665bnab51fXrctA7mEwPumXFOCgX3eFsfZ5T4Cw7+5bVloS/IPc6mv3rxTnEMhQB+fK7BjkTRfSa6ShX0pAHsOHyd3cEduHv16tU9FsC66uvxmkqLCL9zDCb3gPYD2LHQtadDPz6+fJMa9i87KLX2O0N+epTRVk6e53PnWYx1RXjMBRjSWI7RZZ4Q7l6/QJ4GW0Q9AWBiTpyBAnceZ7OsitnblGNRqs5fpkf+YMjwosetHTxaxwlyPMKvUD5NzfaomjboGelg2+zZjh0fPMRxVemIOWLEUHmCirw4WJJSkNi+ovTgW38BfDWqUlNfPw1gLXfuKGKnsKRT9wJObRaGY30j7WUCDF7tq3Uvg02qFvBFGi1bszk08eYz8v08ITS/X6Gf012W/iznzoMuegBYUqiiYL6hdwCM1Yr2NluozYjd2QdfZNSBlS5cAYbndDEcC7wWA2hwsU4rerdrs0ChUFzZfQAX4N3Bpj/viHS+QHikbA/WSuTUVoHnTf3mVaHiwp2G1cBxB3BWnqEvlRDXNwrf5WhdW2/urdspsVOY8mV6HyzlZ7D2sp8t9NMqk8Yrbx5U6kfalXMIxoYNAMGbTmWXDLsAx4/g1ipTQXD8Oj1amxVgvcztyb3eyYWYrtcspyvWbestEZFef65mZwUY/KWfZhRsN8dHX2oSTbn4kqAVuRXwL5v5M4SRx+kzlZ+6wUY4L59jAexbPDqPd7T4tq3OaK91VWBzlLBjE5Db2A9N6xAEeHV/xZSyLN3OYSa+lIrFV997sW3cYzRxu7wxxtiFhN4mWNpN9WoP/+h2z4CcNw6ufNiozMvzeg6z9+EWbXpKZ5cDWLHlL4Xvpa/LruIHGm+A6CH4mPm+QPvjPyoebQB5mQ0fowraIZ3hE+oA+92sVa/ECuMEfqnzl506BEZ1MTrYBF+YkP1HPZT6tUzU1LUVi/gBrQS2tvlyRKAawOA/A1atdWWQqQhep/9u2xWytaUWNPKma2dDhjjgwpMu5P+F/wmTrhxorWxH3BGGbhgpbZtKBs1LPZ7ykDKo/8N8tjrsrFs1aug+uZ14lfi3PWIdXUO5p3ezDXdh2bnnfGITZLPQYnrxV47l9J+GfbC+bUdGhmYc+/oIdv+/dAmKDvC6hnyNGwZs4fs4/oowOo5jonKnPwZmrIHU3q4DzP+n8YF6EDIBvI8k60LbuumO1fF47MpmGMmGB21mXREe2skNrGry0U/nzWShi26OX2gJgEySK9V82jvYk1OSRDy1a0MfhC8drp3sIlyYhE/gLS2PDrb1VTdaLNuzc3W+i8d6Z7KE0HFoyqOQgy4EKAch+gBOA1hAI6GUjfXn9LPHuqeMqpc8IjBY6uRTxQDYH4dNABMzB7xTA1jPbmyOonOhdC24+H/jGGgRVrcNwcbUkviN1OfckS0h/VDOK1JKf5FK53JXCW03f1xjcoCqqwqeE0aDvUHJGRudFFDiyNaDTjC7b0rcKPswRVjoMflfcqqwdpjKfHc8zdNgUBxfRK8gGdyIdPRGQQdrG25LdWRtMzJ5ATTEYRlkmqzZm1lUL5Vxtnzc8kaAHXw5wGaOH+H/7Q9vPXcSBjMtHnkMoia8bIpCi95J999Z38/a6xFBCFt1TKBgIbwQHq8lUsLSVPKZA+er1YYhbVU6AHvEzg3rsDlU+M/+nnCl0sxmB6Xwu2dVeod5VLSenthwY5UQkUdJEYLW+N0oUNNbw9qURN7j+YMdY/0LLwj0YDZtCx/m4yDQR2Ve/2ASZrsHSJOrtDSWsaLxcMRHUfqEiOn/8NDgIiB8z4roSX+dd26R+vVehEswNDT82GPN8XNaD12YGNHbvaKkZWkBHGzV/tDGrBRhJ9W9VblLIXOCj+/jkJsOJmPzCVCgdHSFnfa5pB2Y7NS0lIlQVEayRQ1kC+FsgGF78MLuk+jomguFwvUCSHT/msdKtN9ofhdd+0vrKg/dJRpHHl+xAuOonq5PQv98lrHdw1I6D26Y6E2Ete56e6XMQAfKod6Z9zgqkBPYARR5e3rtppnEdv8BnPkNMZf3CI6fMH1oAzJDT5NkSnWAQVexPK+jVGmJRKxV5v2+g0HsqLEBeRArjWMCwKKDWYGK4laEaegRipzIp9fpxIzSlQqKiGZn22G4i9/Tu1V5OpH6AI60T9xpf5k2ZjgAIHQrvMhbRuSZ4rm9IwnSnbsU30EHGGATYbS/9qHFHr1o3GKIrIF/QMttAEd3AuWTutDt+AZ62JQmwIlp3lLX16aEwgfzwA/7gvAoCtqgST0LzP3GHtY+KsUuAEemBbXn1JM3vgScx2gcgFNqjbThGpBUt24CfLcxu+E6Y8X6e82H42QxFIA2zEjHvexwoS4ZKqx/WcxJl4kGjENHm/0dA9iJfJxQbCQnW2TAkQfwI2p4Koi/OifC0GM6sOFD80BLMA9NiAWAocwJOVUOnwGh1mBQNcM4jn3jD8hc32W0E4BFKMc7tr2+LDQpfEL/Ngkwgn+2gbcWl3MwWXlpdxejqpuuSvTtNQEOeRjeo4zUyHPyelaK+KuuX26z93Jc7jFAkCG04rvfD3B9rNfKs5aR87qCEjjFg5VIi59qj0gCo42BVUcnCRPmf3HR1eMsqmS9cI40Bl2LqDYfa4Y3zlAtvxkbnRtLSAKYTzEwy5ACJypxeCFF6iZ4WQ7AUXwfoU2r8mYKluF2hFCdmOUhHWUzPjVvwGPUvVwKl1YgFKTnzf4PVkawxN67O7mxgBG6pzlZc6ik/LI2EeAiDeD2oQD7R2o11skVZth6XxYDW645+HJ6xHXtNbkj+EkSdRBebWLOWUjeFBEFKxRQxoqEDSUhRp3xthttA5x1HO4LsNcFtj3cDnSfW9++dTQKi8V/HlflEl/vC4S+XkYttii1uVafeNMN+lMr9VsXLgVmTNhbSFZXHvTH2coyPERcWkERMYXWyu8BeVKKKNbftsRby9dX1xBfF+rrkWt6K3+Jta/btuYhyJIF8YKpW07QqXEdw7odOXW6fWgePj62+6A9tJHFmlVJ8Os6QG4Vz0aJRbWVuvVR0RcE28cWeFJr/lnq3rwAUXemVix3Btz5ZqRQAP/SZ7JAsRPAGdmpvZ0s81gYHXIgIVnQO9XztmXyvSU1uwj0SnEnum1CHlAKC3mytnDQRp672Vsm/58YfQq20yQ5AD+mvuMcy/ZZ2JVQuNKTzRKazrssthLcVWFITLyFte7SWJ18wzvzk1TESPJAsF/X9LnapP7UGXxIApgm8Rx4eCzA23kAFlgLG0fH4LPrMRZRt7WaBsot6ukCX2V/WShF0+JCI2Amk7EUYlDTp6C97XyDnyXIB1jP240PAbiDCEtssoha9SpkSHip5sZ5Oew+tvGDBJgHXwrg6I7E9PPQq+uw6bEtsDaLIJzaRO2l0ina7eRexg5+UC1DCdFMKrWlH84S2FSYEBTPHQcebC6mDOZQ3eJ3UoHv45Ec+gVpsbYWS51m5U7bWEuj0c942BXgR7UaugJKdOz6pV2bqfjYNiy/IJ4IYiEDivyugTyT3eYGJV4bvBSwmpgyng1XwugV4BqJNUGYJ+h7FMCPmh3VxOJU4900RhekDD3VeUOlQmJiIj/Ahac35+Arwt0qk9dLHrVgSv5IK0ZxBLLIsDfAD5ohUUcANmmEapWKqy2ZJDyrogrbsKMSHtznw5eCT0a06eOXazzmrNbfXdmJmdCtBrDh2u8I8KN6KtfRHUxDvhJsoWPGpiiP51DHsD888sRHnhat8q2dN9iDpQxcZgytd0xlDe1YW/SmamZw2BPgx5TBnyIAG/yA1meigJybombiz6l/jgz/Hv35Y99UczfNJZsebd4eQ5oizrfdSd1oyVJDGplIdIxpXvRjWjYMMYA7n5LD6GWQYFbqqIWOh1m9rX3kTtPn6P0SZMhxZW1hyqbodeZi3fCiTwBh/enYOSnGTID7BIC5X/EQpqMNv34jvmA+bVXSojtvZJyjj9UvnciUPtI7WUbv567i2tQJu6p5iPCkl/N27Hjf9+Z6vBpHRia7eFiWUALAjyGjYwDr+7PFnmx7ig+9dQBtZLmp3qts2pNH38eprsRSvGNylwvuOi2F47DKD/qybOq6NXmRmwDequOCBGP2AICNAKbxVo8lmMAaxxXfW4G0EA3MLx8jb79XLwUDXXpcqeWVjIwDM6Y2GDnMxEYO5g7eEpI/gq2MrC5jf1ZW45QIjeykq6KC/m2Grj+DHKJQnUgonAKthW2RPeSAGnlDfzxKru4A8+06k0yAH9A6KezhmUewrpBUQvwEH2uEIl6xkULg0FNZlnWcUbYEYnkOywmvvSS9BcKsrtZ+BmoZbS9wHeB43YqMP/dHOJbpoM5Gt1o9JbTiL7UNDFlE1o1cnGw2mGvrKq2E1hNbtXNrGlO8m7DAHYC35q+gva00g8Qo2Fdvtr3e2FaFy93VVtY0FYFQ/ohOGSupLOBg/oK2CPQCo2kAbxQXmu3md5ZWXtKI6NLbL3V79zWbDuSdjUhbq4SCZwdvGdGpzdjlrjTqysmB7ikjhLZdyD8sWCLAKE34nuy5ZlwEBSRgZi74FyiCXbvFzcCNoI2i3nurNVq3SBBu6ptnOJuyS5gcxYo8/Y/TaQB/mASRXRyVMO4CsM/7ISZNlPyAw9YGvhPg3h1cXtzI2dspEbRQ1KZkHJLyJGlER7jSqiY7Auyv3TPlWKzwSZ22TfRmWd19FPvo4lvd6obWOC7S9RyfqdWFgVAU1x0OgIyr/vEAD9vR8laIY2xg76Pcxd5Q+55vnJCtwglf9RSEaZqEdguROJgrhDyqcbGUEOCSPRZg00MMmNqNMEkkdOdzG1JSztn42mdbfeeL8NTExgAe0gBujSJ7NWuLezDuIFnlyhc7EZcBK2qeL81NYUJ0HlRSriFqnwsrz3xnhOFPiqy535uYRRdgS0rUhpRqKMC77wSwdTaWgYKBdmtPAGwB3N5+/lpL/84W2qW3FZ/b00JD6ZIBsPkSkKq66f2qBjHzW+u2ffvVpRQl/VGC44wDdG7WAs4UE+NX3Mjc9PbwElzdeWg12Hv4epyHjGlAC8CeVb68YYrA513PGc/msiPAEArxSHVDjHMx2cNAQ7wb1cCtg293P+UZiGOCet8yD2DzF60yWWJ0KjZ89ikeR/e2wy/B5IF8BFMoWI4GglfLd1Sq9GKrD9f2NehdY5K1G1svwrVS680m19wETLRzjutv+LrOfzGNufCn7wyZtKNH4yDNm2coX+o5grMevQmVWwxrvQjl1I3voHbRK5V0YxNOdPaZAOsJTTOX3GBDSwF6EfZkp0u6j2XSd7BZnHOD3qYCbZzbShY4g7/yASZWEzMEaAdagIGnqCma30tZm74wyadkOYFV+qxV2fPBFw25H2DQlqtFQtKgi9RFiCENUgiOBszPFlJngmO1ByfACynAqnWz1qLFR6TkwdYz2LENLOo0Ghadt6G/2UZpFN36XBZw4aRxaAMuaULQfqvPl84HuAUwzPNeE/5KKArvYKM1xXRDPa/lRWsm0l4evg7rWkQ2+Ts3mqkT9iway2cJAhwMlM6+Fti+RZoJMLmCxRns1NmCIPCa5MWPw3DsUD5Fs57BdtW8szxYtAKEL7Db2MvWGgAmxUbtR8oZPF3+Abe6WXCGp98BMDfPFr2xk5h4hKCmho/n6QZK1rYDkqigmSa6MFrpu9EPOUfltbfNmLczbjNVatEPLLF8ydnxoE2s9PbTzRN01PAI92p2RZBnB4tscNXMffRobjNhR7KzQXNudKzhR3F709ItTEXdhLF58wzlVX/+sivtpxvzc1k5AI8VdhRMu6XGK7eHrlBJH7Uhqoa8CadPXemxsXsiy6PGW9lVyI6KKSAzVQXu15NYBWLnDVORKSA+BfIV6QCzK6w1/3J0HRx3K6llTlgkhDtmx6yLwYEEADZHY9oAbz33ABvKj3yCmoKnYuHoyfulqGtnP9dMgckuN8zPVCYCLJpXWpVlew7IbrHlI0z/7FpivwbVQkm02PN8/fAHoaN2UoYUHUGdQ7ul2kK5xMfaWmWdz+SYny7aqrkN23xF6hH/70gDmAzuFK59yy1r1TZbvgcM5ejJbxtDksEZm0c6PlRaV+1aCf+Egp2x2JQ58RxEukPNkKd+vgkT1o5rbLVq6bXyPvVQfMCm93xJAng4egZh7VvIU1qupnePWCUyTgNHMQxONNZTb8QsH9VI2zBAFG0OqJjWUJEMMUFuttOxunUolTYjvBqlQUKxsqkq5uv9O3hTmNkewbN9d5YPax1Gw745sQsokME+9EhacOEi9H6AFysRW9eXanvoGAJcNDQX4HXm+sl7REVsRiWk4qRfhpmAwbO1jg+aGmyQ0ydefqXu3e48H5vp4+nhfAmdZuAay+WkpldAWifp4uIArKXG4ywY6bbrTYETq+WYt3hV+1WnDzLbXlCoK89zC3AwjPgyztPb9zwOMKsRGHNO1HrauYRHCyUiXT38Nmh68rpuzqaZWRoXGDtYSwMO2blpD8M2/efcbjuaf9z+rG6j6+Om/rUweo/56EzV09AAOBzp9GVhnb3SwCD8Z+9K6Va10Y0liU4B4ZKRwFVNmZgCmIIt0NxkwU7bo11ne1vVW4u985DcfSTnlH8xlVFHyRllMnlW7qwzCLRQuvcaYEklxbjtQLt7fYSxYkrmZW02YYElZ7fNgrUpw3tltrgo49vYfu/8IcePwCF8A74q5vI26/CvZWGbA1+Hk2shCBvbU9OUXVc2dUtJVEGwPDwObq4L2m7ND8pXlgSQtYMXEVCXYlRShy1x3Uczki15hH5IuEQpK26+FISth2n1iu44q1Eg37vcaFy3/gba1teuQsbcDVQOLMZEzz508E0NOGvuaeXbwZAs9klHWLhAnFMlW/cNkW3VZe/d5UQuVx8FJclm20/j6NVVpdtJnGnXnvj0d146pvr5L3VGOOR3cpYfBZv/e6PgaBJU+WrOGSwBTuKTx/QZ3HNWpPSaKTcE8r3EvOWru3o0lnT0ZKOa+OkTXP2E9UMjBzZBLs13xUjNQKdBsgulLeq5B8xZ7WBms8uJbSkpythVgl/hda/NYKHsyeZ77OblpuGQRtd7hlKKzxrsxVebrVWa5w3hR21dHmc/HnnHaekQe1bI2qIwuID61NHU0hWfH8wEeDZGyTXRDGXaTVn2ylHuSQw6nwlZZ8rmQcx0KtdedG4yqg3tE9DYsaqsT+10neqmPC8nbeFOtfNOSAWPF15rklm/CmlEKB1g4d2OCmD7DaeLUC7VDV6tRBmtpuqI1iZCwgVEvoFPfcKIyA1Jj+8ct2mFhCda5yNibb5O8qHha8KhNZNChS8KOxUZ46lh9fUPmhxoTQanp3RJBSjrSFz7KWN1+l0B6Q04OMBDlPHassprlwBT0eOfOsc2UlHB0DMJVruwUZxTzgIeQT/KKudfJ3CH5u0ta0gfbbdyrRlp7CyEwWwGsiykAZA1H8F7DqW4WZYm0QqCGk8rA6sIytsb9b5RxW5A7aawmfUTlRZzMLtHx9asef2cNwFO7w946x7Wc9rq+HPr5L2HBNk+8c3d4thCc4l4+/f5dB8QnU6bfULxLXpxzZNhECb79tld69NpiqaRlcya7hCHHX3hzK6aCw/AuYlsXrqU49WqXnCyAtknyAmQCW2sMa0vIrQZOX8g3EXYQKWn3glgMUMaecoEuO+ugTbHHLO/ZN0SYw3CwaGZk3czWpKdZcSr9HHyK2bLdIQBdICXs8CRawaMSMRYADgygOkg6pPoMLb1LFBstxDzOVMGQTIHEH+a9rKhTDPPeWd/DiJJ3RVY9dBcPsm9vj8m9++ZAH5DN7vw3IVI2y2NtBlwms6Cbg9wN0RrdVRb4E1dBftqGfrbGzYuoGMZ46OTmDrQDM6lbbj1xrLbktjpXdMyn6rSAvj4kX1FOsTEFnhlR8IhVWUOmaPWqccM+GVZpS8gDboOeeet2FVT3HwaWYZ6OOKRGx4woWNbN9frtamH3rt4XIBv05LV23vLeWGaK3U1M7VhQrbza1+drwjMC7xi308iEj+mFWMBBWSCKziRnu130OU2JJAAn7VE+Y1NK1oosrlEjSVWAC+ihmDGLPUVe/PmA3Y1CWAoDJnPApmtghON8nTeHptojtA+P+JxtVTT5YJjAFxs6e1iV1/khUumq2zZznDKNXEEEPJPNKTgE+5ZoyGQ7+zNgVdy7okb1zAetl7fBji/EOrgvN5bjuCc1MNSb79oSlRGSVdmRdJZSVnK6TWNWxm3hXi3BCyt0bjT6RMJmxsXTxt3oLdoPgYw2pp6Eln57TIcgO+Qc1+OHhcoFK3ZdOQv0CeAnWOHAYZt4xA6qjqvastws4568tRQecWO4NmdmjZue7ser4XIED50U5+Ig626RnfofYlbnBZ0Pm0fd1w0n+IfNG7KfM1TDT+xGONqQRvg4uK6WY5L5e8XuRrl6nrbxtWtYBVavbf2gJ0BxiHuPTsgLlDCHtZJDl24g+aVurHGrOIKRywcES074gJdoKbUFWlEt9q3+JYTN2SmEfbWFeDitgawDsDbw9I2jpGkKWrII4VqlhTcdsktH3UTaW0WET0y10Q7E8dIheNcx3LMQ0DBcNdF6kqQFhqRNS2horlx/RxsmfO9DQmSdDx+d7AvOa1+TlmpohYdAsnm6BMc/V37DKMxIYzQVhQvdQu7YqveYVNpBBXmYr2by1QdgO8eQXk54022AwWWEWEs9X3V4M3tbpagByT7ZuBNSgA3KJ11c1xMN0F7aulDRv3NlqYfajH47N7vsQHeY0Ch/93rTXn26FtCOxeEhC7HviInNyv8wVOw9iWgrcqmHdkDod35OlhU8r0jKqSJqeKlYjv1pWmPZioNUvrfXrxteT0PTuvuc5E3oerIpevDSC8fX+yyAcanPX4raSIBHeDdCmunU1sdVdzdSYnwOtu/kuGtT6lLLoxfF0LIx1e9DhZFCztVRdIz9kaNvBXPnoW1pK+7iksHPJmykI1Gvij9UeORXwVgFM3D3mRAkSdm5xPt95+OR3K2GEEeNppfFfm+ACvP484hQt6YXX+huDj980du/GQzAvp9AV7YOa8e+Y6d1R6UpyuzoyX7949MAzWYMHxfgFc1wd5e4liKMiwRth9r9hLP3AHyTHp7zHTkFwGYwo5BkusGld2Zcz6v8sxG57VVIPaI4cgvA/DyuN9yEcdO4cQU5VcHmO0cJL345fTNE8Ew/f4A7xgkvfbFREZE38YYfdO1fZhjQ/i+boYX4bMiOWVjuPLy8f0B/ikWeg7SVzUdSuvn9YUBlsLoH2Oh5yC9FKOXP7sT+8aPqQOMm4+fdRGeSiDf+xlngIUw+idZ6B9zzQDzAvKfZaF/GMBcdYfr9+v4tgA32NQGv69vBnCN0Su5WIRROg5lVZXNteTXtb7NP6BtsoaQ9Kf2+wI84AK9iDs51uUZzepFTfA2OQhszIxnKFcYJ/7MCWFc7PMKpqXSvxrAI8Yvkg3tsa/aBcGZdihT8inom8QfGTDs5WXWSCzH1wKYVK9ioBvVst2q/EGQMF/BBI33YE78ES7mxrvkk2ocm4n6rwB+navBZldNY/rvOfdVJ/+IqJTYRa/Eu1/vqnz6ZgC3WPQHlEIfQOdfv35VlSzSyX1vWQDDXkzemQN8fQMchqU8tZSLkc/TK+8Wr5q3W8tVtnKAU7uzn2EvIkAAXL8B3r4qQ0Ik2mnW+QAnrglxBp/2Ahi/AU7zgdf9JzziTASyAd4lkOCSPjy8AU4AuHAAbvMBrjMAbvcCGNo3wJsXM5vtVJBd2lpn7Moz7AWw8KL7N8BJAGtuM0cgU9haZ+zKElInVSQBPL4BTgDYiCeF5csjpHnr5xyA94GFA/yXvgHevKgZT/L+ZNkAp1t1ATDdC2DE3gBvXqMNcBgBQr1dDgTANBnge/bddAdsBbiAN8DbF5+dh40dHNgYY8k1zp4e27UC+DJcm4CtJjILzhUPEhZ2amq/rSYB/RY5lVPMvgxWn35TIIXlr3Glbct+KsCFDTARr9PMDZdYdLzBR3dUDRZWncwSWWseelt2/Qepj3IJKIBrwZGWRIHXVWfxP2gX6I94+pyHJcGBzAAL7QQrG3MaRIXaulLN9gnl3VVYx1n3BxZdvi7AfJSqRlNMAItsIeE53rWInI8yBjj1yENKDrxLPp1nI04f0Lus8vJ0ADr5YdK1ambDKtZRVS3DWtj0sTnJdMbe5k+EA1qOhJWomv41ESZa3CjvLnEcTe+aNzmWCNNjAfjKB08B7D5u+ksAXNsAyw5AJUdtLSSaXpvoWziZY8cuzgCf+AsU/78Sn41oMIFa/tapBPiTG4jrBHhVrfkg3ptxdq6vhZfA6PAMew8VaiaAm2ktVR/zEAY1aV3+JlFIIROYvLUs/J7MT9fW6IFu2esCzCcIugDT4hPEEHRlhTmrQLhBd8LYVphdBp9QE3LVw9MrFg21CB8CAXT5NiQK4QdClENH0CoDqL0M1QTjTJZNdzD5hGIH8x+hPBe2zh3h3XR5E7/pa2XKhM5TFhr554dlkF8X4KvjZPH31nweG6RWPMMLX81fb+/sYO7udHOT1gnLxYqLZXG+yL+cAcZ8VsXkK7UzrpjvRqbNax58ALO1sTyXtXET/RvLG8XFWfQkEYuKN/uG39N3kjNIU0MF/LOh4Muk/WkAl46TNW1bcvy8yr00mh5r89+nExHxXYNOeEaohqWPfI+XgXakQhrAVY3nhGTNQZqcXsrPx/nc5bvbIT7bdTLE+T8soC7ljVbT369cKf/yM+X/fgJ22vJE1Nwr6oZCxtTp7wKwlYLnAB8+2mI6MtkyumDeaeJP/4Ezr42/fVTheYeJLXORe3lZFmJjMbWDkfZZ4SiN8P8Ufdb7mO3Jsi9sG23kMEYJcMs9A3F/fFcTJBYKk88lWq6LpgpKJDR5jg8SPX4lgKfX0XEJAJNlNkQ4Kn+ZPFQ92g3RIl+RlYzvGCqP6yXxSOHvbOxFzKxatInxCZQvkU+0+G5jCODKsTzwe7ItR7mUpq8nsskNW35EYCna3qr8J3f22A8DuPIAfBGvmC9+8dobsavlaevJG8kZCMv7F7uI7/vJLC89sXq8TImqZU/xeRdNpvvzby8mjSjSgvq+Q5BlZsr593Sjv4nIUxIkmjMR7XgQP8KNAjOqwWp4VILiZQEWbRa0bC4HuGwxh2MxoMJvaniHZf5RV6na86naSgUiAG5nCvS0ntLAlqBMW0/VX/FZDgZcIiaaiTGqBovGAS57jEeZL5lumHCHUeVNpsXI/X2G9M6vV3hUDvl1AUYmwOfpvV2byRUhAqJqOYLrsZZzHV2qQIRJmGoAc3Pd4PXDgw6w9ju4AmwBeKnoabWFoX8H/+tqILqJxtf6v9mhkuzbWVtoHOCWA4y0vi9nbC4eknx9cYBNJ6s8CK6In4zn2U+Rjbn9VFBrlEwKAUErGKmiUlHsMklMAKxiUfGbBcCr2L7xAvzRV0Kzja4tUYwGXDvhKY8r+7bKtHSAS+080gGmn8jWDC+jlQ0ZMWwnU14W4IsLMELyRDvB51/+aqic0ck73p99HkprHJDjzF5U2sy7hf+cQ+NaD7D4Z3kPz8U5PwTUknOngGmZNWShrCp+ohLpxpPZeNRrCoQftwLgq/awOk9DP4/HqqqO5mX/b359flmAmdVzoJRzd8nskfxeAp+y+6xKf9K3xYKamFOJA9+NFwnwEtmA8rdm9cd4USDwz65ntGSeAgov0tdnBPi/aiFoBIFFJEmqOQsqOcIsE80PneKHedHUC3A57xFBCzDZqP2yuL4eFmIKcshsvWcKUUTB5RqJzTacLxpM6YzmWZIVUnRAFwvt7WRO6PLPmpOlgotebpQTVMflu7s15OVfSf+i1cmqJ5tUkZ8IcG0kY+a4cQH4ozI6P11/uWHSFE6VeOY0Znt9xguowkeep8xwgIF18rMUxC8mcpu18q94TtBV3pPjp/rz/6bbI5LVljfOUxcC19MaJk1+t7h56UBQdQQ/qtHe19nBPI6RL6RbAG5gDXOnMGZwwqTJB+7nJIRAcPyYvWiOYyuTuGcFMBoLPDOg88YVVCYnpadlAb/Bo7JusAp1JleqlgAvvnu5ACy8BTqvKkk786hr0U/38Lj+Cl8GYOHEVioQ6Zaja9lUrUtV9hy0Vv4SKlL+yw+hQ9tym1+pNA5nn1EvXzMnSIpOeWE8NdkA/h/1AEy4NZ7pzYoP9CJiWPZc09goy1wtSSQyW2jpAc4PJLhT+iMBLk2AG7WZpTnm2X78e7yw/rdnEoRgsugE4kBabmHn/SLCZl7fBhVnqo6rW0U5yKTlPpLabzxt3PBQiB/5DsD9X/7hum3rM/+G2QVUSSLlpLd4FkuXC2XFPezzGU+rg8+Aelx/hRcHeM2SaunYq5JnMT5QA3NuGTzFvb1gvITx5dPu8a+VkpLDI+hHsbQA4PKe6bN8Hwv8m5Wp4t/AhxEzzll5/Dgk56wvGuzTGk41qzCbW+u/1/o43cpp/slPqBnvssdHH8DD+iu8bpiEzP7VPGKZQ0XhxlQXaW+xGEw94eu+IcabQMi6RH4sKje1Fs0hMNdoNdOfhIml8B8CIQDgs9PWhXXiJ/Zf0ap0imadOJhUWJa6cpPQqpP/v2Gx++rsnaVjytCcOMB8EqAI5OEHSnaqYtVDzBzvadmC05uaJXSskYI6r4syINRNJlB8BGmfGDs0ayBJiSop8GqPqBSf5cyY9tma/3p5zFYeJotw8y06ECjh3HS4z9P5GLfv54UW5R9E51FLL0zLoD8jQ2P2gwA+g0rWzhtSgd3qwlZC+z64/uWPXHp7PNzK4ao/zfpZMvbmZ9lpmG+i8o51ILQdTu2o/cxF/ZnWg/YAtB9XP5DbbGGQaNv/TNmsIPpfaZjRZKJ31NV0+DmtI1+5fJSfWMd/fx9qK09n5bijgXpO/cMLV/iz6aT85326WamUFnRXWQ2PvC4/G+BQrcczr75Yu6P1UOz3trhL/pTWcy8N8Au48loHwAZ29AgIelJ33zfAm7EaU3/eUVXDVmHYG+B/eJWrnn6EPdt5UkDwBvjfXwOorHy3a/crCsXbyXoFT55rCjiPNXnTaM8dN+Y3LHgD/IhLJP9QWSLYt3VO/6xmS2+AN64O88QTT1jtmpHv4Ukzx98Ab1210KriYt/mdVy5g8s3wC9xDp/Kczns7fE2XTO+4+D39Qb4fb0BfgP8vr7v9X/Zw/ANZ74e7gAAAABJRU5ErkJggg==";
 
 // GPS Store Locations — edit with your real coordinates
 const DEFAULT_STORES=[
@@ -928,7 +981,7 @@ function pushNavState(type,id){
 function openSheet(id){document.getElementById(id).classList.add('open');pushNavState('sheet',id);}
 function closeSheet(id){document.getElementById(id).classList.remove('open');popNavIfTop('sheet',id);}
 function openFP(id){document.getElementById(id).classList.add('open');pushNavState('fp',id);}
-function closeFP(id){document.getElementById(id).classList.remove('open');popNavIfTop('fp',id);}
+function closeFP(id){if(id==='fpOnboard'&&window._onboardLocked){toast('Please finish onboarding first');return;}document.getElementById(id).classList.remove('open');popNavIfTop('fp',id);}
 function popNavIfTop(type,id){
   const top=navStack[navStack.length-1];
   if(top&&top.type===type&&top.id===id){
@@ -943,6 +996,13 @@ function showExitToast(){const t=document.getElementById('exittoast');if(!t)retu
 window.addEventListener('popstate',(ev)=>{
   if(navStack.length>0){
     const top=navStack.pop();
+    if(top.id==='fpOnboard'&&window._onboardLocked){
+      // Re-push so the state isn't lost, and keep the gate open
+      navStack.push(top);
+      history.pushState({navDepth:navStack.length,type:top.type,id:top.id},'');
+      toast('Please finish onboarding first');
+      return;
+    }
     const el=document.getElementById(top.id);
     if(el)el.classList.remove('open');
     return;
@@ -978,9 +1038,9 @@ function computeApprover(emD){
 document.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('ov')&&e.target.classList.contains('open'))e.target.classList.remove('open');});
 
 /* ══════════════════════════════════════════ EMAIL + NOTIFICATIONS (free, client-side) */
-async function trySendEmail(toEmail,subject,message){
+async function trySendEmail(toEmail,subject,message,extraParams={}){
   if(EMAILJS_PUBLIC_KEY&&EMAILJS_SERVICE_ID&&EMAILJS_TEMPLATE_ID&&window.emailjs){
-    try{await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{to_email:toEmail,subject,message},EMAILJS_PUBLIC_KEY);return true;}
+    try{await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{to_email:toEmail,subject,message,...extraParams},EMAILJS_PUBLIC_KEY);return true;}
     catch(e){console.error('EmailJS error',e);}
   }
   console.log(`[EMAIL → ${toEmail}] ${subject}: ${message}`);
@@ -993,10 +1053,10 @@ async function enablePushNotifs(){
   if('Notification' in window){
     try{
       const p=await Notification.requestPermission();
-      if(p==='granted'){await dbUpd(`employees/${CU.code}`,{notify_push:true});CU.notify_push=true;toast('🔔 Mobile notifications enabled');startInAppNotifPoll();return true;}
+      if(p==='granted'){await dbUpd(`employees/${CU.code}`,{notify_push:true});CU.notify_push=true;toast('🔔 Notifications enabled');startInAppNotifPoll();return true;}
       // Denied or dismissed — still keep the in-app poller running so alerts show while the app is open
       await dbUpd(`employees/${CU.code}`,{notify_push:true});CU.notify_push=true;
-      toast('🔔 In-app alerts enabled (browser notification permission was not granted)');
+      toast('✅ Notifications enabled — you\'ll get alerts while the app is open');
       startInAppNotifPoll();
       return true;
     }catch(e){
@@ -1006,7 +1066,7 @@ async function enablePushNotifs(){
   // Browser push isn't available in this WebView (common inside MIT App Inventor / embedded webviews).
   // Fall back to a lightweight in-app poller instead of showing an error.
   await dbUpd(`employees/${CU.code}`,{notify_push:true});CU.notify_push=true;
-  toast('🔔 In-app alerts enabled — this device doesn\'t support browser push, so alerts show while the app is open');
+  toast('✅ Notifications enabled — you\'ll get alerts while the app is open');
   startInAppNotifPoll();
   return true;
 }
@@ -1193,7 +1253,7 @@ async function doLogin(){
   finally{btn.innerHTML='Sign In';btn.disabled=false;}
 }
 function doLogout(){if(!confirm('Sign out?'))return;_ls.del('ka_session');CU=null;allEmps=[];document.getElementById('sa').classList.remove('active');document.getElementById('sl').classList.add('active');document.getElementById('lpass').value='';}
-function launchApp(){document.getElementById('sl').classList.remove('active');document.getElementById('sa').classList.add('active');document.getElementById('topav').textContent=ini(CU.name);goPage('dash');loadBadges();startInAppNotifPoll();}
+function launchApp(){document.getElementById('sl').classList.remove('active');document.getElementById('sa').classList.add('active');document.getElementById('topav').textContent=ini(CU.name);goPage('dash');loadBadges();startInAppNotifPoll();checkOnboardGate();}
 async function submitFgt(){const eid=document.getElementById('fgteid').value.trim().toUpperCase();if(!eid){toast('Enter Employee Code');return;}await dbPush('forgot_requests',{emp_id:eid,requested_on:today(),ts:Date.now()});closeSheet('shfgt');toast('Request submitted. HR will contact you.');}
 
 /* ══════════════════════════════════════════ SESSION RESUME ("remember me for 3 hours") */
@@ -1278,8 +1338,22 @@ async function renderDash(navMo){
     window._dashMo=moS;
     const [aD,lvD,rgD,blD,emD,cfD]=await Promise.all([dbGet(`attendance/${CU.code}`),dbGet('leaves'),dbGet('regularizations'),dbGet(`leave_balance/${CU.code}`),dbGet('employees'),dbGet('config')]);
     const org=cfD?.orgName||'Kidza';
+    const dim=new Date(yr,mo,0).getDate(),fd=new Date(yr,mo-1,1).getDay(),tdS=today();
+    const weekOff=CU.week_off!==undefined?parseInt(CU.week_off):0;
     let P=0,LA=0,HD=0,L=0,WO=0,A=0,durs=[],aMap={};
-    if(aD)Object.entries(aD).forEach(([d,r])=>{aMap[d]=r.status;if(!d.startsWith(moS))return;if(r.status==='P'||r.status==='REG')P++;else if(r.status==='LATE')LA++;else if(r.status==='HD')HD++;else if(r.status==='L')L++;else if(r.status==='WO')WO++;else if(r.status==='A')A++;if(r.punch_in&&r.punch_out)durs.push(hrsB(r.punch_in,r.punch_out));});
+    for(let d=1;d<=dim;d++){
+      const ds=`${moS}-${String(d).padStart(2,'0')}`;
+      if(ds>tdS)continue; // future day hasn't happened yet
+      const r=aD?aD[ds]:null;
+      let st=r&&r.status?r.status:'';
+      if(!st){
+        const dow=new Date(ds+'T00:00:00').getDay();
+        st=(dow===weekOff)?'WO':'A';
+      }
+      aMap[ds]=st;
+      if(st==='P'||st==='REG')P++;else if(st==='LATE')LA++;else if(st==='HD')HD++;else if(st==='L')L++;else if(st==='WO')WO++;else if(st==='A')A++;
+      if(r&&r.punch_in&&r.punch_out)durs.push(hrsB(r.punch_in,r.punch_out));
+    }
     const avgH=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1):'0.0';
     let pR=0;if(rgD)pR=Object.values(rgD).filter(r=>r.emp_id===CU.code&&r.status==='PENDING').length;
     const approver=computeApprover(emD);
@@ -1299,7 +1373,6 @@ async function renderDash(navMo){
     if(emD){const td2=today().slice(5);const bds=Object.values(emD).filter(e=>e.dob&&e.dob.slice(5)===td2&&e.status!=='inactive');if(bds.length)bday=`<div class="card" style="background:linear-gradient(135deg,#ffeef3,#fde8ef);border:none"><div style="font-size:22px;margin-bottom:4px">🎂</div><div style="font-weight:800;font-size:14px;color:var(--pink)">Birthday Today!</div><div class="tm ts">${bds.map(e=>`${e.name}${e.department?' ('+e.department+')':''}`).join(', ')}</div></div>`;}
     const prevMo=()=>{const d=new Date(yr,mo-2,1);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;};
     const nextMo=()=>{const d=new Date(yr,mo,1);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;};
-    const dim=new Date(yr,mo,0).getDate(),fd=new Date(yr,mo-1,1).getDay(),tdS=today();
     let cal=`<div class="mcal">`;['S','M','T','W','T','F','S'].forEach(d=>cal+=`<div class="mch">${d}</div>`);
     for(let i=0;i<fd;i++)cal+=`<div class="mcd empty"></div>`;
     for(let d=1;d<=dim;d++){const ds=`${moS}-${String(d).padStart(2,'0')}`;const s=aMap[ds]||'';const it=ds===tdS?'td':'';
@@ -1586,17 +1659,24 @@ async function submitReg(){
   const regMo=pReg.date.slice(0,7);
   const ref=await dbPush('regularizations',{emp_id:CU.code,emp_name:CU.name,date:pReg.date,reg_month:regMo,original_status:pReg.status,requested_status:'P',requested_time_in:tin,requested_time_out:tout,reason,raised_on:today(),status:'PENDING',l1_action:'',l1_by:'',l1_remark:'',final_status:'PENDING',l1_manager:CU.l1_manager||'',l2_manager:CU.l2_manager||''});
   closeSheet('shreg');toast('Regularization submitted ✅ — your approver will be notified');renderDash();loadBadges();
-  await notifyApproversAll(CU,`${CU.name} requested regularization for ${fD(pReg.date)} (${regMo})`);
+  await notifyApproversAll(CU,`${CU.name} requested regularization for ${fD(pReg.date)} (${regMo})`,{requestId:ref?.key||'',requestType:'Regularization',date:fD(pReg.date)});
 }
 
-async function notifyApproversAll(emp,msg){
+async function notifyApproversAll(emp,msg,reqCtx={}){
   const emps=await dbGet('employees');if(!emps)return;
   const targets=new Set([emp.l1_manager,emp.l2_manager].filter(Boolean));
   Object.entries(emps).forEach(([id,e])=>{if(e.role==='admin'&&e.status!=='inactive')targets.add(id);});
   for(const code of targets){
     const mgr=emps[code];if(!mgr||code===emp.code)continue;
     await dbPush(`inbox/${code}`,{msg,from:emp.code,ts:Date.now(),read:false,type:'regularization'});
-    if(mgr.email&&EMAIL_NOTIFS_ENABLED)trySendEmail(mgr.email,'Approval needed — Kidza Attendance',msg);
+    const mgrMail=mgr.notify_email||mgr.email;
+    if(mgrMail&&EMAIL_NOTIFS_ENABLED)trySendEmail(mgrMail,'Approval needed — Kidza Attendance',msg,{
+      l1_manager_name:mgr.name||'',
+      employee_name:emp.name||'',
+      request_id:reqCtx.requestId||'',
+      request_type:reqCtx.requestType||'Regularization',
+      regularization_date:reqCtx.date||''
+    });
     if(mgr.notify_push)showLocalNotif('Kidza Attendance',msg);
   }
 }
@@ -1609,11 +1689,11 @@ async function actReg(action){
     await dbPush('audit_log',{action:'REG_APPROVE',actor:CU.code,target:r.emp_id,date:r.date,old:r.original_status,ts:Date.now()});
     await checkAPL(r.emp_id,r.date.slice(0,7));
     await dbPush(`inbox/${r.emp_id}`,{msg:`Your regularization for ${fD(r.date)} was Approved ✅`,from:CU.code,ts:Date.now(),read:false});
-    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);if(empD?.email)trySendEmail(empD.email,'Regularization Approved — Kidza',`Your regularization request for ${fD(r.date)} has been approved.`);}
+    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);const empMail=empD?.notify_email||empD?.email;if(empMail)trySendEmail(empMail,'Regularization Approved — Kidza',`Your regularization request for ${fD(r.date)} has been approved.`);}
   }else{
     await dbUpd(`attendance/${r.emp_id}/${r.date}`,{reg_rejected:true,carry_forward:true});
     await dbPush(`inbox/${r.emp_id}`,{msg:`Your regularization for ${fD(r.date)} was Rejected`,from:CU.code,ts:Date.now(),read:false});
-    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);if(empD?.email)trySendEmail(empD.email,'Regularization Rejected — Kidza',`Your regularization request for ${fD(r.date)} was rejected.${rk?' Remark: '+rk:''}`);}
+    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);const empMail=empD?.notify_email||empD?.email;if(empMail)trySendEmail(empMail,'Regularization Rejected — Kidza',`Your regularization request for ${fD(r.date)} was rejected.${rk?' Remark: '+rk:''}`);}
   }
   closeSheet('shregap');toast(action==='APPROVE'?'Approved — Marked Present ✅':'Rejected');renderDash();renderLeave();loadBadges();
 }
@@ -1625,11 +1705,11 @@ async function quickReg(key,action){
     await dbPush('audit_log',{action:'REG_APPROVE',actor:CU.code,target:r.emp_id,date:r.date,old:r.original_status,ts:Date.now()});
     await checkAPL(r.emp_id,r.date.slice(0,7));
     await dbPush(`inbox/${r.emp_id}`,{msg:`Your regularization for ${fD(r.date)} was Approved ✅`,from:CU.code,ts:Date.now(),read:false});
-    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);if(empD?.email)trySendEmail(empD.email,'Regularization Approved — Kidza',`Your regularization request for ${fD(r.date)} has been approved.`);}
+    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);const empMail=empD?.notify_email||empD?.email;if(empMail)trySendEmail(empMail,'Regularization Approved — Kidza',`Your regularization request for ${fD(r.date)} has been approved.`);}
   }else{
     await dbUpd(`attendance/${r.emp_id}/${r.date}`,{reg_rejected:true,carry_forward:true});
     await dbPush(`inbox/${r.emp_id}`,{msg:`Your regularization for ${fD(r.date)} was Rejected`,from:CU.code,ts:Date.now(),read:false});
-    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);if(empD?.email)trySendEmail(empD.email,'Regularization Rejected — Kidza',`Your regularization request for ${fD(r.date)} was rejected.`);}
+    if(EMAIL_NOTIFS_ENABLED){const empD=await dbGet(`employees/${r.emp_id}`);const empMail=empD?.notify_email||empD?.email;if(empMail)trySendEmail(empMail,'Regularization Rejected — Kidza',`Your regularization request for ${fD(r.date)} was rejected.`);}
   }
   toast(action==='APPROVE'?'Approved — Present ✅':'Rejected');renderDash();loadBadges();
 }
@@ -1721,7 +1801,7 @@ async function renderPayroll(navMo){
         <div style="color:rgba(255,255,255,.72);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em" id="pyhdrlbl">Net Pay — ${mn} ${yr}</div>
         <div style="color:#fff;font-size:30px;font-weight:900;margin-top:4px;filter:blur(10px)" id="pyhdrval">₹${s.net.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
       </div>
-      <div class="sg3"><div class="st green"><div class="sv">${s.pres}</div><div class="sl">Present</div></div><div class="st red"><div class="sv">${s.abs}</div><div class="sl">Absent</div></div><div class="st amber"><div class="sv">${s.hd}</div><div class="sl">Half Days</div></div><div class="st"><div class="sv">${s.lc}</div><div class="sl">Late</div></div><div class="st blue"><div class="sv">${s.ot.toFixed(1)}h</div><div class="sl">OT Hrs</div></div><div class="st"><div class="sv">${WORK_DAYS}</div><div class="sl">Work Days</div></div></div>
+      <div class="sg3"><div class="st green"><div class="sv">${s.pres}</div><div class="sl">Present</div></div><div class="st red"><div class="sv">${s.abs}</div><div class="sl">Absent</div></div><div class="st amber"><div class="sv">${s.hd}</div><div class="sl">Half Days</div></div><div class="st"><div class="sv">${s.lc}</div><div class="sl">Late</div></div><div class="st blue"><div class="sv">${s.ot.toFixed(1)}h</div><div class="sl">OT Hrs</div></div><div class="st"><div class="sv">${s.pres}</div><div class="sl">Work Days</div></div></div>
       <div class="card"><div class="chdr">Earnings</div>
         <div class="lr"><div class="lrl"><div class="lrt">Basic</div></div><div class="lrr">₹${s.basic.toLocaleString('en-IN')}</div></div>
         <div class="lr"><div class="lrl"><div class="lrt">HRA</div></div><div class="lrr">₹${s.hra.toLocaleString('en-IN')}</div></div>
@@ -1735,7 +1815,7 @@ async function renderPayroll(navMo){
         <div class="lr"><div class="lrl"><div class="lrt">Professional Tax</div></div><div class="lrr" style="color:var(--red)">-₹${s.pt.toLocaleString('en-IN')}</div></div>
         ${s.iap>0?`<div class="lr"><div class="lrl"><div class="lrt">Incentive Already Paid</div></div><div class="lrr" style="color:var(--red)">-₹${s.iap.toLocaleString('en-IN')}</div></div>`:''}
         ${s.tins>0?`<div class="lr"><div class="lrl"><div class="lrt">Term Insurance</div></div><div class="lrr" style="color:var(--red)">-₹${s.tins.toLocaleString('en-IN')}</div></div>`:''}
-        <div class="lr"><div class="lrl"><div class="lrt">LOP (${s.lop.toFixed(1)} days)</div></div><div class="lrr" style="color:var(--red)">-₹${Math.round(s.abd+s.hdd).toLocaleString('en-IN')}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Attendance Adjustment (${s.lop.toFixed(1)} days)</div></div><div class="lrr" style="color:var(--red)">-₹${Math.round(s.abd+s.hdd).toLocaleString('en-IN')}</div></div>
         <div class="lr"><div class="lrl"><div class="lrt">TDS (est. monthly)</div></div><div class="lrr" style="color:var(--red)">-₹${Math.round(s.tax).toLocaleString('en-IN')}</div></div>
         <div class="lr" style="border-top:1.5px solid var(--line)"><div class="lrl"><div class="lrt" style="font-weight:800">Total Deductions</div></div><div class="lrr"><strong>₹${s.totalDed.toLocaleString('en-IN')}</strong></div></div>
       </div>
@@ -1757,42 +1837,101 @@ function togglePayHdr(){
 }
 function calcPay(emp,aD,month,year){
   const moS=`${year}-${String(month).padStart(2,'0')}`;
-  let pres=0,lat=0,hd=0,abs=0,ot=0,lc=0;
-  if(aD)Object.entries(aD).forEach(([d,r])=>{if(!d.startsWith(moS))return;if(r.status==='P'||r.status==='REG')pres++;else if(r.status==='LATE'){lat++;lc++;}else if(r.status==='HD')hd++;else if(r.status==='A')abs++;ot+=parseFloat(r.ot_hours||0);});
-  const sal=emp.salary||0,pd=sal/WORK_DAYS;
-  const lop=abs+(hd*0.5);const ld=Math.floor(lc/LATE_AB)*pd,abd=abs*pd,hdd=hd*pd*0.5;
-  const basic = emp.sal_basic  !==undefined ? emp.sal_basic   : Math.round(sal*0.50);
-  const hra   = emp.sal_hra    !==undefined ? emp.sal_hra     : Math.round(sal*0.20);
-  const da    = emp.sal_da     !==undefined ? emp.sal_da      : Math.round(sal*0.10);
-  const oa    = emp.sal_oa     !==undefined ? emp.sal_oa      : (sal-Math.round(sal*0.50)-Math.round(sal*0.20)-Math.round(sal*0.10));
-  const inc   = emp.sal_incentive  || 0;
-  const othE  = emp.sal_other_earn || 0;
-  const otp   = ot*(pd/SHRS)*1.5;
-  const gross = basic+hra+da+oa+inc+othE+otp;
-  const attDed = abd+hdd+ld;
-  const net0   = gross-attDed;
-  const pfPct = emp.sal_pf_pct!==undefined ? emp.sal_pf_pct : 12;
-  const pf    = emp.sal_pf    !==undefined ? emp.sal_pf     : Math.min(Math.round(basic*pfPct/100),1800);
-  const pt    = emp.sal_pt    !==undefined ? emp.sal_pt     : 200;
-  const iap   = emp.sal_iap   || 0;
-  const tins  = emp.sal_tins  || 0;
+  const daysInMonth=new Date(year,month,0).getDate();
+  const tdS=today();
+  let pres=0,lat=0,hd=0,abs=0,ot=0,lc=0,wo=0,lv=0;
+  const weekOff=emp.week_off!==undefined?parseInt(emp.week_off):0;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${moS}-${String(d).padStart(2,'0')}`;
+    if(ds>tdS)continue; // future day hasn't happened yet — not counted either way
+    const rec=aD?aD[ds]:null;
+    let st=rec&&rec.status?rec.status:'';
+    if(!st){
+      // No record at all for a day that's already passed — defaults to Absent,
+      // unless it's the employee's configured week-off day.
+      const dow=new Date(ds+'T00:00:00').getDay();
+      st=(dow===weekOff)?'WO':'A';
+    }
+    if(st==='P'||st==='REG')pres++;
+    else if(st==='LATE'){lat++;lc++;}
+    else if(st==='HD')hd++;
+    else if(st==='A')abs++;
+    else if(st==='WO')wo++;
+    else if(st==='L')lv++;
+    if(rec)ot+=parseFloat(rec.ot_hours||0);
+  }
+  const sal=emp.salary||0; // Standard Net Salary — from Manage Employees / Bulk Upload
+  // New formula: (Standard Salary / days in month) × (Present + Approved WeekOff + Approved Leave)
+  // Half-days count as half a qualifying day, same convention as before.
+  const qualifyingDays=pres+lat+wo+lv+(hd*0.5);
+  const ratio=daysInMonth>0?qualifyingDays/daysInMonth:0;
+  const pd=sal/daysInMonth;
+  const basicFull = emp.sal_basic  !==undefined ? emp.sal_basic   : Math.round(sal*0.50);
+  const hraFull   = emp.sal_hra    !==undefined ? emp.sal_hra     : Math.round(sal*0.20);
+  const daFull    = emp.sal_da     !==undefined ? emp.sal_da      : Math.round(sal*0.10);
+  const oaFull    = emp.sal_oa     !==undefined ? emp.sal_oa      : (sal-Math.round(sal*0.50)-Math.round(sal*0.20)-Math.round(sal*0.10));
+  const incFull   = emp.sal_incentive  || 0;
+  const othEFull  = emp.sal_other_earn || 0;
+  // Every earning component is pro-rated by the same qualifying-days ratio
+  const basic=Math.round(basicFull*ratio), hra=Math.round(hraFull*ratio), da=Math.round(daFull*ratio), oa=Math.round(oaFull*ratio);
+  const inc=Math.round(incFull*ratio), othE=Math.round(othEFull*ratio);
+  const otp=ot*(pd/SHRS)*1.5; // overtime pay is extra hours worked — paid in full, not pro-rated
+  const gross=basic+hra+da+oa+inc+othE+otp;
+  const grossFull=basicFull+hraFull+daFull+oaFull+incFull+othEFull;
+  // Informational "attendance adjustment" — how much the pro-rating reduced pay by,
+  // shown on the slip the same way LOP used to be (kept as abd/hdd/ld for compatibility).
+  const attAdj=Math.max(0,Math.round(grossFull-(basic+hra+da+oa+inc+othE)));
+  const abd=attAdj,hdd=0,ld=0;
+  const pfPct=emp.sal_pf_pct!==undefined?emp.sal_pf_pct:12;
+  const pf   =emp.sal_pf    !==undefined?Math.round(emp.sal_pf*ratio):Math.min(Math.round(basic*pfPct/100),1800);
+  const pt   =emp.sal_pt    !==undefined?emp.sal_pt:200; // professional tax stays flat, not pro-rated
+  const iap  =emp.sal_iap   ||0;
+  const tins =emp.sal_tins  ||0;
+  const net0=gross-pf-pt-iap-tins;
   const ann=net0*12;let taxA=0;
   if(ann>1000000)taxA=(ann-1000000)*0.30+125000+100000;else if(ann>500000)taxA=(ann-500000)*0.20+25000;else if(ann>250000)taxA=(ann-250000)*0.05;
   const tax=taxA/12;
-  const statDed   = pf+pt+iap+tins+tax;
-  const totalDed  = Math.round(attDed+statDed);
-  const net       = Math.round(gross-totalDed);
-  return{pres:pres+lat,abs,hd,lc,ot,otp,gross,abd,hdd,ld,attDed,tax,pf,pt,iap,tins,inc,othE,net,ann,taxA,lop,basic,hra,da,oa,totalDed};
+  const totalDed=Math.round(pf+pt+iap+tins+tax);
+  const net=Math.round(gross-totalDed);
+  const lop=abs+(hd*0.5);
+  return{pres:pres+lat,abs,hd,lc,ot,otp,gross,grossFull,abd,hdd,ld,attDed:attAdj,tax,pf,pt,iap,tins,inc,othE,net,ann,taxA,lop,basic,hra,da,oa,basicFull,hraFull,daFull,oaFull,totalDed,wo,lv,qualifyingDays,daysInMonth,ratio};
 }
 async function showSlip(empCode,month,year){
-  const [eD,aD,cfD]=await Promise.all([dbGet(`employees/${empCode}`),dbGet(`attendance/${empCode}`),dbGet('config')]);
+  const [eD,aD,cfD,storedSlip]=await Promise.all([dbGet(`employees/${empCode}`),dbGet(`attendance/${empCode}`),dbGet('config'),dbGet(`salary_slips/${empCode}/${year}_${String(month).padStart(2,'0')}`)]);
   if(!eD){toast('Employee not found');return;}
-  const emp={...eD,code:empCode},s=calcPay(emp,aD,month,year),org=cfD?.orgName||'Kidza',mn=MONS[month-1];
+  const emp={...eD,code:empCode},org=cfD?.orgName||'Kidza',mn=MONS[month-1];
+  openFP('fpslip');
+  window._curSlip={empCode,month,year,emp,org,mn};
+  const emailInp=document.getElementById('slipEmailTo');if(emailInp)emailInp.value=emp.notify_email||emp.email||'';
+  // Historical/manual entries (added by admin for months before this system was in use) render
+  // straight from the stored figures instead of recalculating from attendance data.
+  if(storedSlip&&storedSlip.manual){
+    const gross=parseFloat(storedSlip.gross)||0,ded=parseFloat(storedSlip.deductions)||0,net=parseFloat(storedSlip.net)||0;
+    document.getElementById('slipbody').innerHTML=`
+<div id="sprintarea" style="padding:14px;font-family:sans-serif;font-size:12px;background:#fff;color:#1a1a2e">
+  <div style="text-align:center;margin-bottom:14px;border-bottom:2px solid #e8194b;padding-bottom:10px">
+    <img src="${LOGO_B64}" style="height:56px;width:auto;object-fit:contain;margin-bottom:4px" alt="${org}">
+    <div style="font-size:12px;color:#555">PAYSLIP — ${mn.toUpperCase()} ${year}</div>
+    <div class="pill ppu" style="margin-top:6px;display:inline-block">Historical record — entered by admin</div>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span><b>Employee Name:</b> ${emp.name}</span><span><b>Employee Code:</b> ${empCode}</span></div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:10px"><span><b>Designation:</b> ${emp.designation||'—'}</span><span><b>Department:</b> ${emp.department||'—'}</span></div>
+  <table class="sliptbl" style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px">
+    <tr><td style="padding:7px 8px;border-bottom:1px solid #e8e8e8">Gross Earnings</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid #e8e8e8">₹${gross.toLocaleString('en-IN')}</td></tr>
+    <tr><td style="padding:7px 8px;border-bottom:1px solid #e8e8e8">Total Deductions</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid #e8e8e8;color:#b91c1c">-₹${ded.toLocaleString('en-IN')}</td></tr>
+    <tr style="background:#f8f9fa;font-weight:800"><td style="padding:8px">Net Pay</td><td style="text-align:right;padding:8px">₹${net.toLocaleString('en-IN')}</td></tr>
+  </table>
+  ${storedSlip.notes?`<div style="margin-top:10px;font-size:11.5px;background:#fef3c7;border-radius:7px;padding:8px 11px"><b>Notes:</b> ${storedSlip.notes}</div>`:''}
+  <div style="margin-top:10px;font-weight:700;font-size:12px;background:#fef3c7;border-radius:7px;padding:8px 11px">In Words: <em>${numToWords(net)}</em></div>
+  <div style="text-align:center;color:#888;font-size:10.5px;margin-top:14px;font-style:italic">This is a computer generated payslip, hence signature not required.</div>
+</div>`;
+    return;
+  }
+  const s=calcPay(emp,aD,month,year);
   document.getElementById('slipbody').innerHTML=`
 <div id="sprintarea" style="padding:14px;font-family:sans-serif;font-size:12px;background:#fff;color:#1a1a2e">
   <div style="text-align:center;margin-bottom:14px;border-bottom:2px solid #e8194b;padding-bottom:10px">
-    <img src="${LOGO_B64}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;margin-bottom:6px" alt="${org}">
-    <div style="font-size:22px;font-weight:900;color:#e8194b">${org}</div>
+    <img src="${LOGO_B64}" style="height:56px;width:auto;object-fit:contain;margin-bottom:4px" alt="${org}">
     <div style="font-size:12px;color:#555">PAYSLIP — ${mn.toUpperCase()} ${year}</div>
   </div>
   <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span><b>Employee Name:</b> ${emp.name}</span><span><b>Employee Code:</b> ${empCode}</span></div>
@@ -1816,13 +1955,13 @@ async function showSlip(empCode,month,year){
       </tr>
     </thead>
     <tbody>
-      <tr><td style="padding:5px 8px">Basic</td><td style="text-align:right;padding:5px 4px">₹${s.basic.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${s.basic.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.basic*month).toLocaleString('en-IN')}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">Provident Fund</td><td style="text-align:right;padding:5px 4px">₹${s.pf.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.pf*month).toLocaleString('en-IN')}</td></tr>
-      <tr><td style="padding:5px 8px">HRA</td><td style="text-align:right;padding:5px 4px">₹${s.hra.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${s.hra.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.hra*month).toLocaleString('en-IN')}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">Professional Tax</td><td style="text-align:right;padding:5px 4px">₹${s.pt.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.pt*month).toLocaleString('en-IN')}</td></tr>
-      <tr><td style="padding:5px 8px">DA</td><td style="text-align:right;padding:5px 4px">₹${s.da.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${s.da.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.da*month).toLocaleString('en-IN')}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">Incentive Already Paid</td><td style="text-align:right;padding:5px 4px">${s.iap>0?`₹${s.iap.toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">${s.iap>0?`₹${(s.iap*month).toLocaleString('en-IN')}`:'—'}</td></tr>
-      <tr><td style="padding:5px 8px">Other Allowance</td><td style="text-align:right;padding:5px 4px">₹${s.oa.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${s.oa.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.oa*month).toLocaleString('en-IN')}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">Term Insurance</td><td style="text-align:right;padding:5px 4px">${s.tins>0?`₹${s.tins.toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">${s.tins>0?`₹${(s.tins*month).toLocaleString('en-IN')}`:'—'}</td></tr>
-      <tr><td style="padding:5px 8px">Incentive</td><td style="text-align:right;padding:5px 4px">${s.inc>0?`₹${s.inc.toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">${s.inc>0?`₹${s.inc.toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">${s.inc>0?`₹${(s.inc*month).toLocaleString('en-IN')}`:'—'}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">LOP Deduction</td><td style="text-align:right;padding:5px 4px;color:#b91c1c">₹${Math.round(s.abd+s.hdd).toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px;color:#b91c1c">₹${Math.round((s.abd+s.hdd)*month).toLocaleString('en-IN')}</td></tr>
+      <tr><td style="padding:5px 8px">Basic</td><td style="text-align:right;padding:5px 4px">₹${s.basicFull.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${s.basic.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.basic*month).toLocaleString('en-IN')}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">Provident Fund</td><td style="text-align:right;padding:5px 4px">₹${s.pf.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.pf*month).toLocaleString('en-IN')}</td></tr>
+      <tr><td style="padding:5px 8px">HRA</td><td style="text-align:right;padding:5px 4px">₹${s.hraFull.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${s.hra.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.hra*month).toLocaleString('en-IN')}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">Professional Tax</td><td style="text-align:right;padding:5px 4px">₹${s.pt.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.pt*month).toLocaleString('en-IN')}</td></tr>
+      <tr><td style="padding:5px 8px">DA</td><td style="text-align:right;padding:5px 4px">₹${s.daFull.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${s.da.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.da*month).toLocaleString('en-IN')}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">Incentive Already Paid</td><td style="text-align:right;padding:5px 4px">${s.iap>0?`₹${s.iap.toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">${s.iap>0?`₹${(s.iap*month).toLocaleString('en-IN')}`:'—'}</td></tr>
+      <tr><td style="padding:5px 8px">Other Allowance</td><td style="text-align:right;padding:5px 4px">₹${s.oaFull.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${s.oa.toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px">₹${(s.oa*month).toLocaleString('en-IN')}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">Term Insurance</td><td style="text-align:right;padding:5px 4px">${s.tins>0?`₹${s.tins.toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">${s.tins>0?`₹${(s.tins*month).toLocaleString('en-IN')}`:'—'}</td></tr>
+      <tr><td style="padding:5px 8px">Incentive</td><td style="text-align:right;padding:5px 4px">${s.inc>0?`₹${s.inc.toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">${s.inc>0?`₹${s.inc.toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">${s.inc>0?`₹${(s.inc*month).toLocaleString('en-IN')}`:'—'}</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8">Attendance Adjustment</td><td style="text-align:right;padding:5px 4px;color:#b91c1c">₹${Math.round(s.abd+s.hdd).toLocaleString('en-IN')}</td><td style="text-align:right;padding:5px 4px;color:#b91c1c">₹${Math.round((s.abd+s.hdd)*month).toLocaleString('en-IN')}</td></tr>
       <tr><td style="padding:5px 8px">Other Earnings</td><td style="text-align:right;padding:5px 4px">${s.othE>0?`₹${s.othE.toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">${s.otp>0?`+₹${Math.round(s.otp).toLocaleString('en-IN')}`:'—'}</td><td style="text-align:right;padding:5px 4px">—</td>  <td style="padding:5px 8px;border-left:1px solid #e8e8e8"></td><td></td><td></td></tr>
-      <tr style="background:#f8f9fa;font-weight:800;border-top:1.5px solid #d1d5db"><td style="padding:6px 8px">Gross Earnings</td><td style="text-align:right;padding:6px 4px">₹${Math.round(emp.salary||0).toLocaleString('en-IN')}</td><td style="text-align:right;padding:6px 4px">₹${Math.round(s.gross).toLocaleString('en-IN')}</td><td style="text-align:right;padding:6px 4px">₹${Math.round(s.gross*month).toLocaleString('en-IN')}</td>  <td style="padding:6px 8px;border-left:1px solid #e8e8e8">Gross Deductions</td><td style="text-align:right;padding:6px 4px">₹${s.totalDed.toLocaleString('en-IN')}</td><td style="text-align:right;padding:6px 4px">₹${(s.totalDed*month).toLocaleString('en-IN')}</td></tr>
+      <tr style="background:#f8f9fa;font-weight:800;border-top:1.5px solid #d1d5db"><td style="padding:6px 8px">Gross Earnings</td><td style="text-align:right;padding:6px 4px">₹${Math.round(s.grossFull).toLocaleString('en-IN')}</td><td style="text-align:right;padding:6px 4px">₹${Math.round(s.gross).toLocaleString('en-IN')}</td><td style="text-align:right;padding:6px 4px">₹${Math.round(s.gross*month).toLocaleString('en-IN')}</td>  <td style="padding:6px 8px;border-left:1px solid #e8e8e8">Gross Deductions</td><td style="text-align:right;padding:6px 4px">₹${s.totalDed.toLocaleString('en-IN')}</td><td style="text-align:right;padding:6px 4px">₹${(s.totalDed*month).toLocaleString('en-IN')}</td></tr>
     </tbody>
   </table>
   <div style="display:flex;justify-content:flex-end;margin-top:8px;gap:30px;font-weight:800;font-size:13px">
@@ -1836,9 +1975,6 @@ async function showSlip(empCode,month,year){
     This is a computer generated payslip, hence signature not required.
   </div>
 </div>`;
-  openFP('fpslip');
-  window._curSlip={empCode,month,year,emp,org,mn};
-  const emailInp=document.getElementById('slipEmailTo');if(emailInp)emailInp.value=emp.email||'';
   await dbSet(`salary_slips/${empCode}/${year}_${String(month).padStart(2,'0')}`,{month,year,gross:s.gross.toFixed(0),deductions:s.totalDed,net:s.net,generated_on:today()});
 }
 /* Shared blob-download helper — works reliably from inside MIT App Inventor's
@@ -1862,6 +1998,11 @@ async function generateSlipPdfBlob(){
   const area=document.getElementById('sprintarea');if(!area)return null;
   if(!(window.jspdf&&window.html2canvas)){toast('PDF engine not loaded — check your connection');return null;}
   try{
+    // Make sure any images (the logo) inside the slip have actually finished
+    // rendering before html2canvas snapshots it — otherwise the logo can come out
+    // blank in the captured PDF/download.
+    const imgs=area.querySelectorAll('img');
+    await Promise.all(Array.from(imgs).map(img=>img.complete?Promise.resolve():new Promise(res=>{img.onload=res;img.onerror=res;})));
     const canvas=await html2canvas(area,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
     const imgData=canvas.toDataURL('image/png');
     const {jsPDF}=window.jspdf;
@@ -1971,9 +2112,23 @@ async function renderProfile(){
         <div class="sbrow mt8"><span class="ts">Mobile ⇄ Desktop Sync</span><span id="meSyncLbl" class="pill ${db?'pg':'pa'}" style="font-size:9.5px">${db?'● Live':'● Local Only'}</span></div>
         <p class="tm ts mt8">${db?'Your data is synced across all devices signed in to this account.':'This device is not connected to cloud sync — data stays on this device only.'}</p>
       </div>
-      ${cAdmin(CU.role)?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><button class="btn btnp btnbl" onclick="openFP('fpemps');loadEmpList()">👥 Manage Employees</button><button class="btn btno btnbl" onclick="openFP('fpstores');renderStList()">📍 Manage Stores</button><button class="btn btno btnbl" onclick="openFP('fpbulk')">📤 Bulk Upload</button><button class="btn btno btnbl" onclick="openHolidayMgmt()">🎉 Manage Holidays</button><button class="btn btno btnbl" onclick="openAdminLeaveAdd()">📅 Add Leave (Correction)</button><button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button><button class="btn btno btnbl" onclick="openAudit()">📋 View Audit Log</button></div>`:approver.isApprover?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${cMgr(CU.role)?`<button class="btn btnb btnbl" onclick="openTeamAtt()">📊 Team Attendance</button>`:''}<button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button></div>`:''}
+      <div id="mySeparationCard"></div>
+      ${cAdmin(CU.role)?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><button class="btn btnp btnbl" onclick="openFP('fpemps');loadEmpList()">👥 Manage Employees</button><button class="btn btno btnbl" onclick="openFP('fpstores');renderStList()">📍 Manage Stores</button><button class="btn btno btnbl" onclick="openFP('fpbulk')">📤 Bulk Upload</button><button class="btn btno btnbl" onclick="openHolidayMgmt()">🎉 Manage Holidays</button><button class="btn btno btnbl" onclick="openAdminLeaveAdd()">📅 Add Leave (Correction)</button><button class="btn btno btnbl" onclick="openHistSlipAdd()">🗂 Add Old Salary Slip</button><button class="btn btnb btnbl" onclick="openOnboard()">🧾 Hiring &amp; Onboarding (HR)</button><button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button><button class="btn btnw btnbl" onclick="openSeparationReview()">🚪 Separation Review</button><button class="btn btno btnbl" onclick="openAudit()">📋 View Audit Log</button></div>`:approver.isApprover?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${cMgr(CU.role)?`<button class="btn btnb btnbl" onclick="openTeamAtt()">📊 Team Attendance</button>`:''}<button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button><button class="btn btnw btnbl" onclick="openSeparationReview()">🚪 Separation Review</button></div>`:''}
+      <button class="btn btno btnbl mt12" onclick="openOnboard()">🧾 My Onboarding</button>
+      <button class="btn btno btnbl mt12" onclick="openResignSheet()">🚪 Submit Resignation</button>
       <button class="btn btnr btnbl mt12" onclick="doLogout()" style="margin-bottom:30px">Sign Out</button>
     </div>`;
+    // Show the employee's own most recent separation status, if any
+    const sepD=await dbGet('separations');
+    if(sepD){
+      const mine=Object.values(sepD).filter(s=>s.emp_id===CU.code).sort((a,b)=>b.submitted_on>a.submitted_on?1:-1)[0];
+      const sc2=document.getElementById('mySeparationCard');
+      if(mine&&sc2){
+        const stageLabel={PENDING_L1:'Awaiting L1 Approval',PENDING_L2:'Awaiting L2 Approval',PENDING_L3:'Awaiting L3 Approval',APPROVED:'Approved',REJECTED:'Rejected'};
+        const stageColor={PENDING_L1:'pa',PENDING_L2:'pa',PENDING_L3:'pa',APPROVED:'pg',REJECTED:'pr'};
+        sc2.innerHTML=`<div class="card"><div class="fb mb8"><div class="chdr" style="margin:0">My Resignation Status</div><span class="pill ${stageColor[mine.status]||'pgr'}">${stageLabel[mine.status]||mine.status}</span></div><div class="lr"><div class="lrl"><div class="lrt">Submitted</div></div><div class="lrr">${fD(mine.submitted_on)}</div></div><div class="lr"><div class="lrl"><div class="lrt">Requested Last Working Day</div></div><div class="lrr"><strong>${fD(mine.requested_lwd)}</strong></div></div></div>`;
+      }
+    }
     if(approver.isApprover){
       const l1c=document.getElementById('l1RegCard');if(l1c){
         const rgD2=await dbGet('regularizations');let pR2=[];
@@ -2274,19 +2429,22 @@ async function openAddEmp(empCode){
   eEmpId=empCode;document.getElementById('fpetit').textContent=empCode?'Edit Employee':'Add Employee';
   const ss=document.getElementById('est');ss.innerHTML=stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   const emps=await dbGet('employees');const mo='<option value="">None</option>'+(emps?Object.entries(emps).map(([id,e])=>`<option value="${id}">${e.name} (${id})</option>`).join(''):'');
-  ['ermgr','el1','el2'].forEach(id=>document.getElementById(id).innerHTML=mo);
+  ['ermgr','el1','el2','el3'].forEach(id=>document.getElementById(id).innerHTML=mo);
   const prv=document.getElementById('ephotoprv');prv.innerHTML='📷';prv.dataset.photo='';
   document.getElementById('eDeviceBind').classList.remove('on');
   document.getElementById('eDeviceResetWrap').style.display='none';
   if(empCode&&emps&&emps[empCode]){
     const e=emps[empCode];document.getElementById('ec').value=empCode;document.getElementById('ec').disabled=true;
     document.getElementById('en').value=e.name||'';document.getElementById('em').value=e.mobile||'';document.getElementById('ee').value=e.email||'';
+    document.getElementById('enotify').value=e.notify_email||'';
     document.getElementById('ed').value=e.designation||'';document.getElementById('ept').value=e.department||'';
     document.getElementById('est').value=e.assigned_store||'';document.getElementById('ermgr').value=e.reporting_manager||'';
     document.getElementById('edoj').value=e.join_date||'';document.getElementById('edob').value=e.dob||'';
     document.getElementById('esal').value=e.salary||'';document.getElementById('erole').value=e.role||'staff';
     document.getElementById('eshift').value=e.shift||'general';document.getElementById('ewoff').value=e.week_off||'0';
-    document.getElementById('el1').value=e.l1_manager||'';document.getElementById('el2').value=e.l2_manager||'';
+    document.getElementById('el1').value=e.l1_manager||'';document.getElementById('el2').value=e.l2_manager||'';document.getElementById('el3').value=e.l3_manager||'';
+    document.getElementById('enoticedays').value=(e.notice_period_days!==undefined?e.notice_period_days:30);
+    document.getElementById('ehire').value=e.hire_status||'existing';
     document.getElementById('epan').value=e.pan||'';document.getElementById('epfno').value=e.pf_number||'';
     document.getElementById('euan').value=e.uan||'';document.getElementById('ebankname').value=e.bank_name||'';
     document.getElementById('ebankacct').value=e.bank_account||'';document.getElementById('eifsc').value=e.ifsc||'';
@@ -2297,11 +2455,15 @@ async function openAddEmp(empCode){
     if(e.bound_device_id){dw.style.display='block';document.getElementById('eDeviceInfo').textContent=`Currently bound to: ${e.bound_device_label||e.bound_device_id.slice(0,18)} · since ${e.bound_device_set_on||'—'}`;}
     else{dw.style.display='block';document.getElementById('eDeviceInfo').textContent='No device bound yet — will lock on next login.';}
   }else{
-    ['ec','en','em','ee','ed','ept','epass','epan','epfno','euan','ebankname','ebankacct','eifsc'].forEach(id=>{const el2=document.getElementById(id);if(el2){el2.value='';el2.disabled=false;}});
+    ['ec','en','em','ee','enotify','ed','ept','epass','epan','epfno','euan','ebankname','ebankacct','eifsc'].forEach(id=>{const el2=document.getElementById(id);if(el2){el2.value='';el2.disabled=false;}});
     ['edoj','edob','esal'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
     document.getElementById('erole').value='staff';document.getElementById('eshift').value='general';document.getElementById('ewoff').value='0';
+    document.getElementById('enoticedays').value=30;
+    document.getElementById('ehire').value='new';
     document.getElementById('epass').placeholder='Set login password';
   }
+  const dbtn=document.getElementById('edelbtn');
+  if(dbtn)dbtn.style.display=(empCode&&cAdmin(CU.role)&&empCode!==CU.code)?'block':'none';
   openFP('fpemp');
 }
 async function resetEmpDeviceBinding(){
@@ -2317,7 +2479,7 @@ async function saveEmployee(){
   if(!code||!name){toast('Code and Name required');return;}if(!eEmpId&&!pass){toast('Password required for new employee');return;}
   const photo=document.getElementById('ephotoprv').dataset.photo||'';
   const deviceBindEnabled=document.getElementById('eDeviceBind').classList.contains('on');
-  const data={name,mobile:document.getElementById('em').value.trim(),email:document.getElementById('ee').value.trim(),designation:document.getElementById('ed').value.trim(),department:document.getElementById('ept').value.trim(),assigned_store:document.getElementById('est').value,reporting_manager:document.getElementById('ermgr').value,join_date:document.getElementById('edoj').value,dob:document.getElementById('edob').value,salary:sal,role,status:'active',shift:document.getElementById('eshift').value,week_off:parseInt(document.getElementById('ewoff').value)||0,l1_manager:document.getElementById('el1').value,l2_manager:document.getElementById('el2').value,pan:document.getElementById('epan').value.trim().toUpperCase(),pf_number:document.getElementById('epfno').value.trim(),uan:document.getElementById('euan').value.trim(),bank_name:document.getElementById('ebankname').value.trim(),bank_account:document.getElementById('ebankacct').value.trim(),ifsc:document.getElementById('eifsc').value.trim().toUpperCase(),code,device_bind_enabled:deviceBindEnabled};
+  const data={name,mobile:document.getElementById('em').value.trim(),email:document.getElementById('ee').value.trim(),notify_email:document.getElementById('enotify').value.trim(),designation:document.getElementById('ed').value.trim(),department:document.getElementById('ept').value.trim(),assigned_store:document.getElementById('est').value,reporting_manager:document.getElementById('ermgr').value,join_date:document.getElementById('edoj').value,dob:document.getElementById('edob').value,salary:sal,role,status:'active',shift:document.getElementById('eshift').value,week_off:parseInt(document.getElementById('ewoff').value)||0,l1_manager:document.getElementById('el1').value,l2_manager:document.getElementById('el2').value,l3_manager:document.getElementById('el3').value,notice_period_days:parseInt(document.getElementById('enoticedays').value)||0,hire_status:document.getElementById('ehire').value,pan:document.getElementById('epan').value.trim().toUpperCase(),pf_number:document.getElementById('epfno').value.trim(),uan:document.getElementById('euan').value.trim(),bank_name:document.getElementById('ebankname').value.trim(),bank_account:document.getElementById('ebankacct').value.trim(),ifsc:document.getElementById('eifsc').value.trim().toUpperCase(),code,device_bind_enabled:deviceBindEnabled};
   if(!deviceBindEnabled){data.bound_device_id='';data.bound_device_label='';data.bound_device_set_on='';}
   if(photo)data.photo=photo;
   if(pass)data.password_hash=hp(pass);
@@ -2327,6 +2489,21 @@ async function saveEmployee(){
     await dbPush('audit_log',{action:eEmpId?'EMP_EDIT':'EMP_ADD',actor:CU.code,target:code,ts:Date.now()});closeFP('fpemp');toast(eEmpId?'Updated ✅':'Employee added ✅');loadEmpList();
   }
   catch(e){toast('Save failed: '+e.message);console.error(e);}finally{btn.innerHTML='Save Employee';btn.disabled=false;}
+}
+// Admin-only: permanently remove an employee's login/record. Their historical
+// attendance, leave, and regularization records are kept for audit purposes.
+async function deleteEmployee(){
+  if(!cAdmin(CU.role)){toast('Admin only');return;}
+  if(!eEmpId){toast('No employee selected');return;}
+  if(eEmpId===CU.code){toast('You cannot delete your own account');return;}
+  const empName=document.getElementById('en').value||eEmpId;
+  if(!confirm(`Permanently remove ${empName} (${eEmpId})? They will no longer be able to log in. This cannot be undone.`))return;
+  const btn=document.getElementById('edelbtn');btn.innerHTML='<div class="spin"></div>';btn.disabled=true;
+  try{
+    await dbDel(`employees/${eEmpId}`);
+    await dbPush('audit_log',{action:'EMP_DELETE',actor:CU.code,target:eEmpId,note:empName,ts:Date.now()});
+    closeFP('fpemp');toast('🗑 Employee removed');loadEmpList();
+  }catch(e){toast('Delete failed: '+e.message);}finally{btn.innerHTML='🗑 Delete Employee';btn.disabled=false;}
 }
 
 /* ══════════════════════════════════════════ STORES */
@@ -2555,8 +2732,366 @@ async function showNotifs(){
   openSheet('shnotif');
 }
 
+/* ══════════════════════════════════════════ HISTORICAL SALARY SLIP (Admin) */
+async function openHistSlipAdd(){
+  if(!cAdmin(CU.role)){toast('Admin only');return;}
+  const emps=await dbGet('employees');if(!emps)return;
+  document.getElementById('hsEmp').innerHTML=Object.entries(emps).map(([id,e])=>`<option value="${id}">${e.name} (${id})</option>`).join('');
+  document.getElementById('hsMonth').innerHTML=MONS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  document.getElementById('hsYear').value=new Date().getFullYear();
+  document.getElementById('hsGross').value='';document.getElementById('hsDed').value='';document.getElementById('hsNet').value='';document.getElementById('hsNotes').value='';
+  openSheet('shHistSlip');
+}
+async function saveHistSlip(){
+  const empCode=document.getElementById('hsEmp').value;
+  const month=parseInt(document.getElementById('hsMonth').value);
+  const year=parseInt(document.getElementById('hsYear').value);
+  const gross=parseFloat(document.getElementById('hsGross').value)||0;
+  const deductions=parseFloat(document.getElementById('hsDed').value)||0;
+  const net=parseFloat(document.getElementById('hsNet').value)||0;
+  const notes=document.getElementById('hsNotes').value.trim();
+  if(!empCode||!month||!year){toast('Employee, month and year are required');return;}
+  await dbSet(`salary_slips/${empCode}/${year}_${String(month).padStart(2,'0')}`,{month,year,gross,deductions,net,notes,manual:true,generated_on:today(),entered_by:CU.code});
+  await dbPush('audit_log',{action:'HIST_SLIP_ADD',actor:CU.code,target:empCode,note:`${MONS[month-1]} ${year}`,ts:Date.now()});
+  closeSheet('shHistSlip');
+  toast('✅ Old salary slip saved');
+}
+
+/* ══════════════════════════════════════════ HIRING & ONBOARDING */
+const ONBOARD_MANDATORY=['photo','aadhar','offer_letters','epf','bank'];
+function onboardIsComplete(ob){
+  if(!ob)return false;
+  const hasPhoto=!!ob.photo;
+  const hasAadhar=!!ob.aadhar;
+  const hasOffer=Array.isArray(ob.offer_letters)&&ob.offer_letters.length>0;
+  const hasEpf=!!(ob.epf_number||ob.uan);
+  const hasBank=!!(ob.bank_account&&ob.ifsc);
+  const acceptedOffer=!!ob.offer_accepted;
+  return hasPhoto&&hasAadhar&&hasOffer&&hasEpf&&hasBank&&acceptedOffer;
+}
+// Called right after login — forces the Onboarding page open (non-dismissible) for
+// "New" hires who haven't finished it yet. "Existing" hires are never blocked.
+async function checkOnboardGate(){
+  if(!CU||CU.role==='admin')return;
+  const hireStatus=CU.hire_status||'existing';
+  if(hireStatus!=='new')return;
+  const ob=await dbGet(`onboarding/${CU.code}`);
+  if(onboardIsComplete(ob))return;
+  window._onboardLocked=true;
+  await openOnboard();
+}
+async function openOnboard(){
+  openFP('fpOnboard');
+  const closeBtn=document.getElementById('onboardCloseBtn');
+  if(closeBtn)closeBtn.style.display=window._onboardLocked?'none':'flex';
+  await renderOnboard();
+}
+async function renderOnboard(){
+  const el=document.getElementById('onboardBody');
+  el.innerHTML='<p class="tc tm ts">Loading…</p>';
+  if(cAdmin(CU.role)){await renderOnboardAdmin();return;}
+  const ob=await dbGet(`onboarding/${CU.code}`)||{};
+  const complete=onboardIsComplete(ob);
+  const chk=(label,ok,mandatory)=>`<div class="lr"><div class="lrl"><div class="lrt">${label}</div></div><div class="lrr"><span class="pill ${ok?'pg':(mandatory?'pr':'pgr')}">${ok?'✓ Done':(mandatory?'Required':'Optional')}</span></div></div>`;
+  el.innerHTML=`<div class="padt">
+    ${window._onboardLocked?`<div class="card" style="background:var(--psoft);border:none"><strong style="color:var(--pink)">Complete onboarding to unlock the rest of the app.</strong><p class="tm ts mt8">Upload the required documents below. Once everything is done, Attendance, Regularization, Leave and other features will open up automatically.</p></div>`:`<p class="tm ts mb12">You can use the rest of the app already — but please complete onboarding when you get a chance.</p>`}
+    <div class="card"><div class="chdr">Checklist</div>
+      ${chk('Passport-size Photo',!!ob.photo,true)}
+      ${chk('Aadhaar Card',!!ob.aadhar,true)}
+      ${chk('PAN Card',!!ob.pan,false)}
+      ${chk('Previous Employer Offer Letter',(ob.offer_letters||[]).length>0,true)}
+      ${chk('Last 3 Months Salary Slips',(ob.salary_slips||[]).length>0,false)}
+      ${chk('EPF Details',!!(ob.epf_number||ob.uan),true)}
+      ${chk('Salary Account Details',!!(ob.bank_account&&ob.ifsc),true)}
+      ${chk('Accepted Offer Letter',!!ob.offer_accepted,true)}
+    </div>
+    <div class="card"><div class="chdr">1. Passport-size Photo *</div>
+      <div class="photopick"><div class="photoprev" id="obPhotoPrv">${ob.photo?`<img src="${ob.photo}" style="width:100%;height:100%;object-fit:cover">`:'📷'}</div>
+      <div style="flex:1"><input type="file" id="obPhotoInp" accept="image/*" style="display:none" onchange="onboardUploadSingle('photo',this)"><button class="btn btno btnsm" onclick="document.getElementById('obPhotoInp').click()">📷 Upload Photo</button></div></div>
+    </div>
+    <div class="card"><div class="chdr">2. Aadhaar Card *</div>
+      <input type="file" id="obAadharInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px" onchange="onboardUploadSingle('aadhar',this)">
+      ${ob.aadhar?`<div class="tm ts">Uploaded: ${ob.aadhar_name||'file'}</div>`:''}
+    </div>
+    <div class="card"><div class="chdr">3. PAN Card (optional)</div>
+      <input type="file" id="obPanInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px" onchange="onboardUploadSingle('pan',this)">
+      ${ob.pan?`<div class="tm ts">Uploaded: ${ob.pan_name||'file'}</div>`:''}
+    </div>
+    <div class="card"><div class="chdr">4. Previous Employer Offer Letter * <span class="tm" style="font-weight:400">(1–5 files)</span></div>
+      <input type="file" id="obOfferInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px" ${((ob.offer_letters||[]).length>=5)?'disabled':''} onchange="onboardUploadMulti('offer_letters',this)">
+      ${(ob.offer_letters||[]).map((f,i)=>`<div class="lr"><div class="lrl"><div class="lrt">${f.name||'File '+(i+1)}</div></div><button class="btn btnr btnsm" onclick="onboardRemoveMulti('offer_letters',${i})">Remove</button></div>`).join('')}
+    </div>
+    <div class="card"><div class="chdr">5. Last 3 Months Salary Slips (optional)</div>
+      <input type="file" id="obSlipInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px" ${((ob.salary_slips||[]).length>=3)?'disabled':''} onchange="onboardUploadMulti('salary_slips',this)">
+      ${(ob.salary_slips||[]).map((f,i)=>`<div class="lr"><div class="lrl"><div class="lrt">${f.name||'File '+(i+1)}</div></div><button class="btn btnr btnsm" onclick="onboardRemoveMulti('salary_slips',${i})">Remove</button></div>`).join('')}
+    </div>
+    <div class="card"><div class="chdr">6. EPF Details *</div>
+      <div class="fg"><label class="fl">EPF Number</label><input id="obEpfNo" class="fi" value="${ob.epf_number||''}" placeholder="PF/XXX/000"></div>
+      <div class="fg"><label class="fl">UAN</label><input id="obUan" class="fi" value="${ob.uan||''}" placeholder="100XXXXXXXXX"></div>
+      <button class="btn btnp btnsm" onclick="onboardSaveEpf()">Save EPF Details</button>
+    </div>
+    <div class="card"><div class="chdr">7. Salary Account Details *</div>
+      <div class="fg"><label class="fl">Bank Name</label><input id="obBankName" class="fi" value="${ob.bank_name||''}" placeholder="SBI / HDFC…"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Account Number</label><input id="obBankAcct" class="fi" value="${ob.bank_account||''}" placeholder="Account no."></div>
+        <div class="fg"><label class="fl">IFSC</label><input id="obIfsc" class="fi" value="${ob.ifsc||''}" placeholder="SBIN0001234"></div>
+      </div>
+      <button class="btn btnp btnsm" onclick="onboardSaveBank()">Save Bank Details</button>
+    </div>
+    <div class="card"><div class="chdr">8. Offer Letter</div>
+      ${ob.admin_offer_letter?`
+        <p class="tm ts mb8">HR has uploaded your offer letter.</p>
+        <button class="btn btno btnbl mb8" onclick="onboardViewAdminOffer()">📄 View Offer Letter</button>
+        ${ob.offer_accepted?`<div class="pill pg">✓ Accepted on ${fD(ob.offer_accepted_on)}</div>`:`<button class="btn btng btnbl" onclick="onboardAcceptOffer()">✅ Accept Offer Letter</button>`}
+      `:`<p class="tm ts">Waiting for HR/Admin to upload your offer letter.</p>`}
+    </div>
+  </div>`;
+}
+async function onboardUploadSingle(field,inp){
+  if(!inp.files[0])return;
+  const file=inp.files[0];
+  if(file.size>2*1024*1024){toast('File must be under 2MB');return;}
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    await dbUpd(`onboarding/${CU.code}`,{[field]:e.target.result,[field+'_name']:file.name});
+    toast('Uploaded ✅');renderOnboard();
+  };reader.readAsDataURL(file);
+}
+async function onboardUploadMulti(field,inp){
+  if(!inp.files[0])return;
+  const file=inp.files[0];
+  if(file.size>2*1024*1024){toast('File must be under 2MB');return;}
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const ob=await dbGet(`onboarding/${CU.code}`)||{};
+    const arr=ob[field]||[];
+    arr.push({data:e.target.result,name:file.name});
+    await dbUpd(`onboarding/${CU.code}`,{[field]:arr});
+    toast('Uploaded ✅');renderOnboard();
+  };reader.readAsDataURL(file);
+}
+async function onboardRemoveMulti(field,idx){
+  const ob=await dbGet(`onboarding/${CU.code}`)||{};
+  const arr=ob[field]||[];
+  arr.splice(idx,1);
+  await dbUpd(`onboarding/${CU.code}`,{[field]:arr});
+  renderOnboard();
+}
+async function onboardSaveEpf(){
+  const epf_number=document.getElementById('obEpfNo').value.trim();
+  const uan=document.getElementById('obUan').value.trim();
+  if(!epf_number&&!uan){toast('Enter EPF Number or UAN');return;}
+  await dbUpd(`onboarding/${CU.code}`,{epf_number,uan});
+  toast('Saved ✅');renderOnboard();
+}
+async function onboardSaveBank(){
+  const bank_name=document.getElementById('obBankName').value.trim();
+  const bank_account=document.getElementById('obBankAcct').value.trim();
+  const ifsc=document.getElementById('obIfsc').value.trim().toUpperCase();
+  if(!bank_account||!ifsc){toast('Account number and IFSC are required');return;}
+  await dbUpd(`onboarding/${CU.code}`,{bank_name,bank_account,ifsc});
+  toast('Saved ✅');renderOnboard();
+}
+async function onboardViewAdminOffer(){
+  const ob=await dbGet(`onboarding/${CU.code}`);
+  if(!ob?.admin_offer_letter)return;
+  try{const res=await fetch(ob.admin_offer_letter);const blob=await res.blob();triggerBlobDownload(blob,ob.admin_offer_letter_name||'Offer_Letter');}
+  catch(e){toast('Could not open file');}
+}
+async function onboardAcceptOffer(){
+  if(!confirm('Accept this offer letter? This confirms you agree to its terms.'))return;
+  await dbUpd(`onboarding/${CU.code}`,{offer_accepted:true,offer_accepted_on:today()});
+  toast('✅ Offer letter accepted');
+  const ob=await dbGet(`onboarding/${CU.code}`);
+  if(onboardIsComplete(ob)){
+    window._onboardLocked=false;
+    toast('🎉 Onboarding complete — the rest of the app is now unlocked!',4000);
+    closeFP('fpOnboard');
+    goPage('dash');
+  }else renderOnboard();
+}
+async function renderOnboardAdmin(){
+  const el=document.getElementById('onboardBody');
+  const emps=await dbGet('employees');
+  if(!emps){el.innerHTML='<div class="es"><div class="ei">👥</div><p>No employees</p></div>';return;}
+  let rows='';
+  for(const[code,e]of Object.entries(emps)){
+    const ob=await dbGet(`onboarding/${code}`);
+    const complete=onboardIsComplete(ob);
+    rows+=`<div class="lr"><div class="lrl"><div class="lrt">${e.name} <span class="pill ${e.hire_status==='new'?'pa':'pgr'}" style="font-size:9px">${e.hire_status==='new'?'New':'Existing'}</span></div><div class="lrs">${code}</div></div><div class="lrr"><span class="pill ${complete?'pg':'pa'}">${complete?'Complete':'Pending'}</span><button class="btn btno btnsm mt8" onclick="renderOnboardAdminDetail('${code}')">Manage</button></div></div>`;
+  }
+  el.innerHTML=`<div class="padt"><p class="tm ts mb12">Manage each employee's onboarding — upload their offer letter and review submitted documents.</p><div class="card">${rows}</div></div>`;
+}
+async function renderOnboardAdminDetail(code){
+  const el=document.getElementById('onboardBody');
+  const [e,ob]=await Promise.all([dbGet(`employees/${code}`),dbGet(`onboarding/${code}`)]);
+  const o=ob||{};
+  const viewBtn=(field,label)=>o[field]?`<button class="btn btno btnsm" onclick="onboardAdminViewFile('${code}','${field}')">${label}</button>`:`<span class="tm ts">Not uploaded</span>`;
+  el.innerHTML=`<div class="padt">
+    <button class="btn btno btnsm mb12" onclick="renderOnboardAdmin()">← Back to list</button>
+    <div class="card"><div class="chdr">${e?.name||code} (${code})</div>
+      <div class="lr"><div class="lrl"><div class="lrt">Photo</div></div><div class="lrr">${viewBtn('photo','View')}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Aadhaar</div></div><div class="lrr">${viewBtn('aadhar','View')}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">PAN</div></div><div class="lrr">${viewBtn('pan','View')}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Offer Letters</div></div><div class="lrr">${(o.offer_letters||[]).length} file(s)</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Salary Slips</div></div><div class="lrr">${(o.salary_slips||[]).length} file(s)</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">EPF</div></div><div class="lrr ts">${o.epf_number||o.uan||'—'}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Bank</div></div><div class="lrr ts">${o.bank_account?`${o.bank_account} · ${o.ifsc}`:'—'}</div></div>
+    </div>
+    <div class="card"><div class="chdr">Upload Offer Letter for ${e?.name||code}</div>
+      <input type="file" id="obAdminOfferInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px">
+      <button class="btn btnp btnbl" onclick="onboardAdminUploadOffer('${code}')">⬆️ Upload Offer Letter</button>
+      ${o.admin_offer_letter?`<p class="tm ts mt8">Uploaded: ${o.admin_offer_letter_name||'file'} ${o.offer_accepted?'· ✅ Accepted by employee':'· Awaiting employee acceptance'}</p>`:''}
+    </div>
+  </div>`;
+}
+async function onboardAdminViewFile(code,field){
+  const ob=await dbGet(`onboarding/${code}`);
+  if(!ob?.[field])return;
+  try{const res=await fetch(ob[field]);const blob=await res.blob();triggerBlobDownload(blob,ob[field+'_name']||field);}
+  catch(e){toast('Could not open file');}
+}
+async function onboardAdminUploadOffer(code){
+  const inp=document.getElementById('obAdminOfferInp');
+  if(!inp.files[0]){toast('Select a file');return;}
+  const file=inp.files[0];
+  if(file.size>2*1024*1024){toast('File must be under 2MB');return;}
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    await dbUpd(`onboarding/${code}`,{admin_offer_letter:e.target.result,admin_offer_letter_name:file.name,offer_accepted:false});
+    await dbPush(`inbox/${code}`,{msg:'Your offer letter has been uploaded — please review and accept it in Onboarding.',from:CU.code,ts:Date.now(),read:false});
+    toast('✅ Offer letter uploaded');
+    renderOnboardAdminDetail(code);
+  };reader.readAsDataURL(file);
+}
+
+/* ══════════════════════════════════════════ SEPARATION / RESIGNATION (Exit Interview, L1→L2→L3) */
+function calcNoticeLWD(days){
+  const d=new Date();d.setDate(d.getDate()+(parseInt(days)||30));
+  return d.toISOString().slice(0,10);
+}
+let _resignRating=3;
+function setResignRating(n){
+  _resignRating=n;
+  document.querySelectorAll('#resignRatingCr .chip').forEach((c,i)=>c.classList.toggle('sel',i+1===n));
+}
+async function openResignSheet(){
+  const days=CU.notice_period_days!==undefined&&CU.notice_period_days!==null?CU.notice_period_days:30;
+  const lwd=calcNoticeLWD(days);
+  document.getElementById('resignNoticeInfo').innerHTML=`<div class="fb"><span class="ts">Notice Period</span><strong>${days} days</strong></div><div class="fb mt8"><span class="ts">Standard Last Working Day</span><strong>${fD(lwd)}</strong></div>`;
+  document.getElementById('resignLwd').value=lwd;
+  document.getElementById('resignReason').value='';
+  document.getElementById('resignFeedback').value='';
+  setResignRating(3);
+  openSheet('shResign');
+}
+async function submitResignation(){
+  const reason=document.getElementById('resignReason').value.trim();
+  const feedback=document.getElementById('resignFeedback').value.trim();
+  const lwd=document.getElementById('resignLwd').value;
+  if(!reason){toast('Enter your reason for leaving');return;}
+  if(!lwd){toast('Select a last working day');return;}
+  const days=CU.notice_period_days!==undefined&&CU.notice_period_days!==null?CU.notice_period_days:30;
+  const computedLwd=calcNoticeLWD(days);
+  await dbPush('separations',{emp_id:CU.code,emp_name:CU.name,submitted_on:today(),reason,exit_feedback:feedback,exit_rating:_resignRating,notice_period_days:days,computed_lwd:computedLwd,requested_lwd:lwd,status:'PENDING_L1',l1_manager:CU.l1_manager||'',l2_manager:CU.l2_manager||'',l3_manager:CU.l3_manager||''});
+  closeSheet('shResign');
+  toast('Resignation submitted ✅');
+  if(CU.l1_manager){
+    const emps=await dbGet('employees');
+    const mgr=emps?emps[CU.l1_manager]:null;
+    if(mgr){
+      await dbPush(`inbox/${CU.l1_manager}`,{msg:`${CU.name} submitted a resignation — awaiting your approval`,from:CU.code,ts:Date.now(),read:false});
+      const mgrMail=mgr.notify_email||mgr.email;
+      if(mgrMail&&EMAIL_NOTIFS_ENABLED)trySendEmail(mgrMail,'Resignation Approval Needed — Kidza',`${CU.name} (${CU.code}) has submitted a resignation. Please review in the app.`);
+    }
+  }
+  renderProfile();
+}
+async function openSeparationReview(){openFP('fpSepReview');await loadSeparationReview();}
+async function loadSeparationReview(){
+  const el=document.getElementById('sepReviewBody');
+  el.innerHTML='<p class="tc tm ts">Loading…</p>';
+  const data=await dbGet('separations');
+  if(!data){el.innerHTML='<div class="es"><div class="ei">🚪</div><p>No separations found</p></div>';return;}
+  let entries=Object.entries(data);
+  const isAdmin=cAdmin(CU.role);
+  if(!isAdmin){
+    entries=entries.filter(([k,s])=>(s.status==='PENDING_L1'&&s.l1_manager===CU.code)||(s.status==='PENDING_L2'&&s.l2_manager===CU.code)||(s.status==='PENDING_L3'&&s.l3_manager===CU.code));
+  }
+  entries.sort((a,b)=>b[1].submitted_on>a[1].submitted_on?1:-1);
+  if(!entries.length){el.innerHTML='<div class="es"><div class="ei">✅</div><p class="tm ts">No separations pending your review</p></div>';return;}
+  const stageLabel={PENDING_L1:'Awaiting L1',PENDING_L2:'Awaiting L2',PENDING_L3:'Awaiting L3',APPROVED:'Approved',REJECTED:'Rejected'};
+  const stageColor={PENDING_L1:'pa',PENDING_L2:'pa',PENDING_L3:'pa',APPROVED:'pg',REJECTED:'pr'};
+  el.innerHTML=entries.map(([k,s])=>{
+    const canAct=!isAdmin&&((s.status==='PENDING_L1'&&s.l1_manager===CU.code)||(s.status==='PENDING_L2'&&s.l2_manager===CU.code)||(s.status==='PENDING_L3'&&s.l3_manager===CU.code));
+    return `<div class="card" style="margin-bottom:9px;padding:13px">
+      <div class="fb mb8"><div><div style="font-weight:800;font-size:13.5px">${s.emp_name||s.emp_id}</div><div class="tm ts">${s.emp_id} · Submitted ${fD(s.submitted_on)}</div></div><span class="pill ${stageColor[s.status]||'pgr'}">${stageLabel[s.status]||s.status}</span></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Reason</div></div><div class="lrr ts" style="max-width:60%;text-align:right">${s.reason||'—'}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Exit Feedback</div></div><div class="lrr ts" style="max-width:60%;text-align:right">${s.exit_feedback||'—'}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Experience Rating</div></div><div class="lrr">${s.exit_rating||'—'} / 5</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Notice Period</div></div><div class="lrr">${s.notice_period_days} days</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Standard LWD</div></div><div class="lrr">${fD(s.computed_lwd)}</div></div>
+      <div class="lr"><div class="lrl"><div class="lrt">Requested LWD</div></div><div class="lrr"><strong>${fD(s.requested_lwd)}</strong></div></div>
+      ${s.l1_remark?`<div class="lr"><div class="lrl"><div class="lrt">L1</div></div><div class="lrr ts">${s.l1_by||''} · ${s.l1_remark||'—'}</div></div>`:''}
+      ${s.l2_remark?`<div class="lr"><div class="lrl"><div class="lrt">L2</div></div><div class="lrr ts">${s.l2_by||''} · ${s.l2_remark||'—'}</div></div>`:''}
+      ${s.l3_remark?`<div class="lr"><div class="lrl"><div class="lrt">L3</div></div><div class="lrr ts">${s.l3_by||''} · ${s.l3_remark||'—'}</div></div>`:''}
+      ${canAct?`<div class="btngr mt8"><button class="btn btnr btnsm" onclick="actSeparation('${k}','REJECT',this)">✕ Reject</button><button class="btn btng btnsm" onclick="actSeparation('${k}','APPROVE',this)">✓ Approve</button></div><input class="fi mt8" style="font-size:12px;padding:8px" placeholder="Remark (optional)…" id="seprk_${k}">`:''}
+    </div>`;
+  }).join('');
+}
+async function actSeparation(key,action,btn){
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="spin"></div>';}
+  const rkEl=document.getElementById(`seprk_${key}`);const rk=rkEl?rkEl.value.trim():'';
+  const s=await dbGet(`separations/${key}`);if(!s)return;
+  const stage=s.status==='PENDING_L1'?'l1':s.status==='PENDING_L2'?'l2':s.status==='PENDING_L3'?'l3':null;
+  if(!stage)return;
+  const patch={};
+  patch[`${stage}_by`]=CU.code;patch[`${stage}_on`]=today();patch[`${stage}_remark`]=rk;
+  if(action==='REJECT'){
+    patch.status='REJECTED';
+  }else{
+    if(stage==='l1')patch.status=s.l2_manager?'PENDING_L2':(s.l3_manager?'PENDING_L3':'APPROVED');
+    else if(stage==='l2')patch.status=s.l3_manager?'PENDING_L3':'APPROVED';
+    else patch.status='APPROVED';
+  }
+  await dbUpd(`separations/${key}`,patch);
+  await dbPush('audit_log',{action:'SEPARATION_'+action,actor:CU.code,target:s.emp_id,ts:Date.now()});
+  const emps=await dbGet('employees');
+  if(patch.status==='APPROVED'||patch.status==='REJECTED'){
+    const empD=emps?emps[s.emp_id]:null;
+    const empMail=empD?.notify_email||empD?.email;
+    await dbPush(`inbox/${s.emp_id}`,{msg:`Your resignation was ${patch.status==='APPROVED'?'Approved ✅':'Rejected'}`,from:CU.code,ts:Date.now(),read:false});
+    if(empMail&&EMAIL_NOTIFS_ENABLED)trySendEmail(empMail,`Resignation ${patch.status==='APPROVED'?'Approved':'Rejected'} — Kidza`,`Your resignation request has been ${patch.status==='APPROVED'?'approved':'rejected'}.${rk?' Remark: '+rk:''}`);
+  }else if(patch.status&&patch.status.startsWith('PENDING_')){
+    const nextCode=patch.status==='PENDING_L2'?s.l2_manager:s.l3_manager;
+    if(nextCode&&emps&&emps[nextCode]){
+      const mgr=emps[nextCode];const mgrMail=mgr.notify_email||mgr.email;
+      await dbPush(`inbox/${nextCode}`,{msg:`${s.emp_name||s.emp_id}'s resignation needs your approval`,from:CU.code,ts:Date.now(),read:false});
+      if(mgrMail&&EMAIL_NOTIFS_ENABLED)trySendEmail(mgrMail,'Resignation Approval Needed — Kidza',`${s.emp_name||s.emp_id} has a resignation awaiting your approval.`);
+    }
+  }
+  toast(action==='APPROVE'?'Approved ✅':'Rejected');
+  loadSeparationReview();
+}
+
 /* ══════════════════════════════════════════ AUDIT LOG */
-async function openAudit(){if(!cAdmin(CU.role)){toast('Admin only');return;}const data=await dbGet('audit_log');const ac={PUNCH_IN:'pg',PUNCH_OUT:'pt',LEAVE_APPROVE:'pg',REG_APPROVE:'pg',MGR_EDIT:'pa',EMP_ADD:'pb',EMP_EDIT:'pa',SETUP:'ppu'};document.getElementById('auditbody').innerHTML=data?Object.values(data).reverse().slice(0,200).map(l=>`<div class="lr"><div class="lrl"><div class="lrt"><span class="pill ${ac[l.action]||'pgr'}" style="font-size:9.5px">${l.action}</span></div><div class="lrs">By:${l.actor}${l.target?' → '+l.target:''} ${l.old&&l.new?`(${l.old}→${l.new})`:''}</div><div class="lrs">${l.date||''}</div></div><div class="lrr ts tm">${new Date(l.ts).toLocaleDateString('en-IN')}</div></div>`).join(''):`<div class="es"><div class="ei">📋</div><p>No logs yet</p></div>`;openFP('fpaudit');}
+async function openAudit(){
+  if(!cAdmin(CU.role)){toast('Admin only');return;}
+  const data=await dbGet('audit_log');
+  const ac={PUNCH_IN:'pg',PUNCH_OUT:'pt',LEAVE_APPROVE:'pg',REG_APPROVE:'pg',MGR_EDIT:'pa',EMP_ADD:'pb',EMP_EDIT:'pa',EMP_DELETE:'pr',SETUP:'ppu'};
+  document.getElementById('auditbody').innerHTML=data?Object.entries(data).sort((a,b)=>b[1].ts-a[1].ts).slice(0,200).map(([k,l])=>`<div class="lr"><input type="checkbox" class="audit-chk" value="${k}" style="width:16px;height:16px;accent-color:var(--pink);margin-right:8px"><div class="lrl"><div class="lrt"><span class="pill ${ac[l.action]||'pgr'}" style="font-size:9.5px">${l.action}</span></div><div class="lrs">By:${l.actor}${l.target?' → '+l.target:''} ${l.old&&l.new?`(${l.old}→${l.new})`:''}</div><div class="lrs">${l.date||''}</div></div><div class="lrr ts tm">${new Date(l.ts).toLocaleDateString('en-IN')}</div></div>`).join(''):`<div class="es"><div class="ei">📋</div><p>No logs yet</p></div>`;
+  openFP('fpaudit');
+}
+function toggleAllAudit(checked){document.querySelectorAll('.audit-chk').forEach(c=>c.checked=checked);}
+async function deleteSelectedAudit(){
+  if(!cAdmin(CU.role)){toast('Admin only');return;}
+  const chks=Array.from(document.querySelectorAll('.audit-chk:checked')).map(c=>c.value);
+  if(!chks.length){toast('Select at least one entry');return;}
+  if(!confirm(`Delete ${chks.length} audit log entr${chks.length>1?'ies':'y'}? This cannot be undone.`))return;
+  for(const k of chks){await dbDel(`audit_log/${k}`);}
+  toast(`🗑 ${chks.length} entr${chks.length>1?'ies':'y'} deleted`);
+  openAudit();
+}
 
 /* ══════════════════════════════════════════ BADGES */
 async function loadBadges(){
