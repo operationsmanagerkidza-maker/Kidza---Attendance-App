@@ -250,7 +250,7 @@ textarea.fi{resize:vertical;min-height:72px}
       <div class="fg"><label class="fl">Password</label><input id="lpass" name="password" type="password" class="fi" placeholder="Your password" autocomplete="current-password"></div>
       <div class="fg" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
         <input id="lremember" type="checkbox" style="width:16px;height:16px;accent-color:var(--pink)" checked>
-        <label for="lremember" class="ts tm" style="cursor:pointer">Remember me for 3 hours</label>
+        <label for="lremember" class="ts tm" style="cursor:pointer">Remember me on this device</label>
       </div>
       <button class="btn btnp" id="lbtn" type="submit">Sign In</button>
     </form>
@@ -433,10 +433,6 @@ textarea.fi{resize:vertical;min-height:72px}
   <div class="fptop">
     <div class="fptit">Salary Slip</div>
     <div style="display:flex;gap:6px"><button class="btn btnp btnsm" onclick="dlSlipPdf()">⬇️ PDF</button><div class="ib" onclick="closeFP('fpslip')">✕</div></div>
-  </div>
-  <div style="padding:10px 14px;border-bottom:1.5px solid var(--line);background:var(--card);display:flex;gap:6px;align-items:center">
-    <input type="email" id="slipEmailTo" class="fi" placeholder="Send this slip to email ID…" style="flex:1">
-    <button class="btn btnb btnsm" id="slipEmailBtn" onclick="sendSlipToEmail()">✉️ Send</button>
   </div>
   <div class="fpsc" id="slipbody"></div>
 </div>
@@ -814,7 +810,7 @@ const EMAILJS_TEMPLATE_ID="";
 const EMAIL_NOTIFS_ENABLED=true;
 
 // "Remember me" session length — sessions resume automatically for this long
-const REMEMBER_MS=3*60*60*1000; // 3 hours
+const REMEMBER_MS=100*365*24*60*60*1000; // effectively forever — stays signed in until the person logs out
 
 /* ══════════════════════════════════════════ CONSTANTS */
 const SHIFTS={
@@ -1189,7 +1185,14 @@ async function checkFirst(){const e=await dbGet('employees');if(!e||!Object.keys
 function getDeviceId(){
   let id=_ls.get('ka_device_id');
   if(!id){
-    id='dev_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);
+    // IMPORTANT: this must be deterministic, not random. Some packaged WebViews
+    // (e.g. inside MIT App Inventor) can lose localStorage between app sessions —
+    // if the ID were random, the same physical phone would look like a "new device"
+    // every time storage resets, permanently locking people out of Device Binding.
+    // Basing it on stable device/browser characteristics means it regenerates to the
+    // SAME value on the same device even after storage is cleared.
+    const fingerprint=`${navigator.userAgent}|${screen.width}x${screen.height}|${navigator.language}|${navigator.hardwareConcurrency||''}`;
+    id='dev_'+hp(fingerprint);
     _ls.set('ka_device_id',id);
   }
   return id;
@@ -1783,8 +1786,35 @@ async function runAPL(){
   toast(`✅ APL credit processed for ${cnt} employees`);
 }
 /* ══════════════════════════════════════════ PAYROLL */
+async function renderPayrollAdminDirectory(){
+  const el=document.getElementById('pgp');
+  el.innerHTML=`<div class="pad"><p class="tc tm ts">Loading…</p></div>`;
+  try{
+    const emps=await dbGet('employees');
+    const list=emps?Object.entries(emps):[];
+    const now=new Date();
+    const rows=list.map(([code,e])=>`<div class="lr"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ini(e.name)}</div><div class="lrl"><div class="lrt">${e.name}</div><div class="lrs">${code} · ${e.designation||e.department||''}</div></div><div class="lrr" style="gap:4px;flex-wrap:wrap;justify-content:flex-end"><button class="btn btnp btnsm" onclick="showSlip('${code}',${now.getMonth()+1},${now.getFullYear()})">💰 Slip</button><button class="btn btno btnsm" onclick="openLettersFor('${code}')">📋 Letters</button></div></div>`).join('');
+    el.innerHTML=`<div class="padt fade">
+      <div class="card"><div class="chdr">All Employees — Salary Slips &amp; Letters</div>
+        <div class="sbar mb8"><span>🔍</span><input id="paySrch" placeholder="Search name or code…" oninput="filterPayrollDirectory()"></div>
+        <div id="payrollDirList">${rows||'<div class="es"><div class="ei">👥</div><p>No employees</p></div>'}</div>
+      </div>
+      <button class="btn btno btnbl" onclick="openSheet('shrpt')">📋 Export Payroll Reports</button>
+      <button class="btn btno btnbl mt8" onclick="openHistSlipAdd()">🗂 Add Old Salary Slip</button>
+    </div>`;
+    window._payDir=list;
+  }catch(e){el.innerHTML=`<div class="es"><div class="ei">⚠️</div><p>Error</p></div>`;console.error(e);}
+}
+function filterPayrollDirectory(){
+  const q=(document.getElementById('paySrch').value||'').toLowerCase();
+  const list=(window._payDir||[]).filter(([code,e])=>(e.name||'').toLowerCase().includes(q)||code.toLowerCase().includes(q));
+  const now=new Date();
+  document.getElementById('payrollDirList').innerHTML=list.map(([code,e])=>`<div class="lr"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ini(e.name)}</div><div class="lrl"><div class="lrt">${e.name}</div><div class="lrs">${code} · ${e.designation||e.department||''}</div></div><div class="lrr" style="gap:4px;flex-wrap:wrap;justify-content:flex-end"><button class="btn btnp btnsm" onclick="showSlip('${code}',${now.getMonth()+1},${now.getFullYear()})">💰 Slip</button><button class="btn btno btnsm" onclick="openLettersFor('${code}')">📋 Letters</button></div></div>`).join('')||'<div class="es"><div class="ei">🔍</div><p>No match</p></div>';
+}
+function openLettersFor(code){window._lettersForCode=code;openLetters();}
 async function renderPayroll(navMo){
   const el=document.getElementById('pgp');el.innerHTML=`<div class="pad"><p class="tc tm ts">Loading…</p></div>`;
+  if(cAdmin(CU.role)){await renderPayrollAdminDirectory();return;}
   try{
     const now=new Date();
     if(navMo){const[ny,nm]=navMo.split('-').map(Number);now.setFullYear(ny);now.setMonth(nm-1);}
@@ -1902,7 +1932,6 @@ async function showSlip(empCode,month,year){
   const emp={...eD,code:empCode},org=cfD?.orgName||'Kidza',mn=MONS[month-1];
   openFP('fpslip');
   window._curSlip={empCode,month,year,emp,org,mn};
-  const emailInp=document.getElementById('slipEmailTo');if(emailInp)emailInp.value=emp.notify_email||emp.email||'';
   // Historical/manual entries (added by admin for months before this system was in use) render
   // straight from the stored figures instead of recalculating from attendance data.
   if(storedSlip&&storedSlip.manual){
@@ -1990,6 +2019,14 @@ function triggerBlobDownload(blob,filename){
   // blob URL directly as a fallback — many WebViews hand blob: URLs off to the native
   // OS (e.g. a "save/open with" chooser), which succeeds even when the anchor doesn't.
   try{window.open(url,'_blank');}catch(e){}
+  // A second, more compatible fallback: convert to a base64 data: URI and open that too.
+  // Some restrictive WebViews block blob: URLs from ever leaving the page, but will still
+  // hand off a data: URI to the system's default PDF/image viewer or download manager.
+  try{
+    const reader=new FileReader();
+    reader.onload=()=>{try{window.open(reader.result,'_blank');}catch(e){}};
+    reader.readAsDataURL(blob);
+  }catch(e){}
   setTimeout(()=>{try{document.body.removeChild(a);}catch(e){}URL.revokeObjectURL(url);},4000);
 }
 // Shared PDF generation for the Salary Slip — used by both the direct download
@@ -2021,50 +2058,6 @@ async function dlSlipPdf(){
 }
 // Send the currently-open salary slip to any email ID the person types in —
 // separate from (and never overwrites) the employee's registered login email.
-async function sendSlipToEmail(){
-  const to=document.getElementById('slipEmailTo').value.trim();
-  if(!to){toast('Enter an email ID to send to');return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)){toast('Enter a valid email ID');return;}
-  const ctx=window._curSlip||{};
-  const btn=document.getElementById('slipEmailBtn');
-  btn.innerHTML='<div class="spin"></div>';btn.disabled=true;
-  try{
-    const blob=await generateSlipPdfBlob();
-    if(!blob){return;}
-    let sent=false;
-    // Best-effort real attachment via EmailJS's sendForm (needs a configured
-    // EmailJS Service + Template that accepts an "attachment" file field, and
-    // works on EmailJS plans that support attachments).
-    if(EMAILJS_PUBLIC_KEY&&EMAILJS_SERVICE_ID&&EMAILJS_TEMPLATE_ID&&window.emailjs&&window.DataTransfer){
-      try{
-        const file=new File([blob],'Kidza_Salary_Slip.pdf',{type:'application/pdf'});
-        const dt=new DataTransfer();dt.items.add(file);
-        const form=document.createElement('form');form.style.display='none';
-        const mk=(name,val)=>{const i=document.createElement('input');i.name=name;i.value=val;form.appendChild(i);};
-        mk('to_email',to);
-        mk('subject',`Salary Slip — ${ctx.mn||''} ${ctx.year||''}`);
-        mk('message',`Please find attached the salary slip for ${ctx.mn||''} ${ctx.year||''}.`);
-        const fileInp=document.createElement('input');fileInp.type='file';fileInp.name='attachment';fileInp.files=dt.files;form.appendChild(fileInp);
-        document.body.appendChild(form);
-        await emailjs.sendForm(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,form,EMAILJS_PUBLIC_KEY);
-        document.body.removeChild(form);
-        sent=true;
-      }catch(e){console.warn('EmailJS attachment send failed, falling back to mail app',e);}
-    }
-    if(sent){
-      toast('✅ Salary slip emailed to '+to);
-    }else{
-      // No attachment-capable email service configured — download the PDF locally
-      // and open the device's mail app pre-filled, so the person can attach it manually.
-      triggerBlobDownload(blob,'Kidza_Salary_Slip.pdf');
-      const subject=encodeURIComponent(`Salary Slip — ${ctx.mn||''} ${ctx.year||''}`);
-      const body=encodeURIComponent(`Hi,\n\nThe salary slip PDF for ${ctx.mn||''} ${ctx.year||''} has been downloaded on this device — please attach it to this email before sending.\n\n— Kidza Attendance`);
-      window.open(`mailto:${to}?subject=${subject}&body=${body}`,'_blank');
-      toast('📎 Email attachments aren\'t configured yet — downloaded the PDF and opened your mail app so you can attach it manually.',6000);
-    }
-  }catch(e){toast('Send failed: '+e.message);}
-  finally{btn.innerHTML='✉️ Send';btn.disabled=false;}
-}
 async function showTax(){const now=new Date(),yr=now.getFullYear();const aD=await dbGet(`attendance/${CU.code}`);let tot=0;for(let m=1;m<=12;m++){const s=calcPay(CU,aD,m,yr);tot+=s.net;}const taxA=tot>1000000?(tot-1000000)*0.30+125000+100000:tot>500000?(tot-500000)*0.20+25000:tot>250000?(tot-250000)*0.05:0;toast(`FY ${yr}: Income ₹${tot.toLocaleString('en-IN',{maximumFractionDigits:0})} | Tax ₹${taxA.toLocaleString('en-IN',{maximumFractionDigits:0})}`);}
 async function genAllSlips(){const now=new Date(),mo=now.getMonth()+1,yr=now.getFullYear();const emps=await dbGet('employees');if(!emps)return;for(const[code]of Object.entries(emps)){await dbSet(`salary_slips/${code}/${yr}_${String(mo).padStart(2,'0')}`,{month:mo,year:yr,emp_code:code,generated_on:today()});}toast('✅ All salary slips generated');}
 /* ══════════════════════════════════════════ PROFILE */
@@ -2115,7 +2108,7 @@ async function renderProfile(){
       <div id="mySeparationCard"></div>
       ${cAdmin(CU.role)?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><button class="btn btnp btnbl" onclick="openFP('fpemps');loadEmpList()">👥 Manage Employees</button><button class="btn btno btnbl" onclick="openFP('fpstores');renderStList()">📍 Manage Stores</button><button class="btn btno btnbl" onclick="openFP('fpbulk')">📤 Bulk Upload</button><button class="btn btno btnbl" onclick="openHolidayMgmt()">🎉 Manage Holidays</button><button class="btn btno btnbl" onclick="openAdminLeaveAdd()">📅 Add Leave (Correction)</button><button class="btn btno btnbl" onclick="openHistSlipAdd()">🗂 Add Old Salary Slip</button><button class="btn btnb btnbl" onclick="openOnboard()">🧾 Hiring &amp; Onboarding (HR)</button><button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button><button class="btn btnw btnbl" onclick="openSeparationReview()">🚪 Separation Review</button><button class="btn btno btnbl" onclick="openAudit()">📋 View Audit Log</button></div>`:approver.isApprover?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${cMgr(CU.role)?`<button class="btn btnb btnbl" onclick="openTeamAtt()">📊 Team Attendance</button>`:''}<button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button><button class="btn btnw btnbl" onclick="openSeparationReview()">🚪 Separation Review</button></div>`:''}
       <button class="btn btno btnbl mt12" onclick="openOnboard()">🧾 My Onboarding</button>
-      <button class="btn btno btnbl mt12" onclick="openResignSheet()">🚪 Submit Resignation</button>
+      ${cAdmin(CU.role)?'':`<button class="btn btno btnbl mt12" onclick="openResignSheet()">🚪 Submit Resignation</button>`}
       <button class="btn btnr btnbl mt12" onclick="doLogout()" style="margin-bottom:30px">Sign Out</button>
     </div>`;
     // Show the employee's own most recent separation status, if any
@@ -2773,10 +2766,9 @@ function onboardIsComplete(ob){
 // "New" hires who haven't finished it yet. "Existing" hires are never blocked.
 async function checkOnboardGate(){
   if(!CU||CU.role==='admin')return;
-  const hireStatus=CU.hire_status||'existing';
-  if(hireStatus!=='new')return;
   const ob=await dbGet(`onboarding/${CU.code}`);
   if(onboardIsComplete(ob))return;
+  if(ob&&ob.released)return; // admin has released app access for this person before they finished onboarding
   window._onboardLocked=true;
   await openOnboard();
 }
@@ -2807,22 +2799,22 @@ async function renderOnboard(){
     </div>
     <div class="card"><div class="chdr">1. Passport-size Photo *</div>
       <div class="photopick"><div class="photoprev" id="obPhotoPrv">${ob.photo?`<img src="${ob.photo}" style="width:100%;height:100%;object-fit:cover">`:'📷'}</div>
-      <div style="flex:1"><input type="file" id="obPhotoInp" accept="image/*" style="display:none" onchange="onboardUploadSingle('photo',this)"><button class="btn btno btnsm" onclick="document.getElementById('obPhotoInp').click()">📷 Upload Photo</button></div></div>
+      <div style="flex:1"><input type="file" id="obPhotoInp" accept="image/*" capture="environment" style="display:none" onchange="onboardUploadSingle('photo',this)"><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btno btnsm" onclick="document.getElementById('obPhotoInp').click()">📷 Upload Photo</button><button class="btn btnb btnsm" onclick="onboardOpenCamera('photo',false)">📸 Use Camera</button></div></div></div>
     </div>
     <div class="card"><div class="chdr">2. Aadhaar Card *</div>
-      <input type="file" id="obAadharInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px" onchange="onboardUploadSingle('aadhar',this)">
+      <div style="display:flex;gap:6px;margin-bottom:8px"><input type="file" id="obAadharInp" accept="image/*,.pdf" class="fi" style="flex:1;padding:8px" onchange="onboardUploadSingle('aadhar',this)"><button class="btn btnb btnsm" onclick="onboardOpenCamera('aadhar',false)">📸</button></div>
       ${ob.aadhar?`<div class="tm ts">Uploaded: ${ob.aadhar_name||'file'}</div>`:''}
     </div>
     <div class="card"><div class="chdr">3. PAN Card (optional)</div>
-      <input type="file" id="obPanInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px" onchange="onboardUploadSingle('pan',this)">
+      <div style="display:flex;gap:6px;margin-bottom:8px"><input type="file" id="obPanInp" accept="image/*,.pdf" class="fi" style="flex:1;padding:8px" onchange="onboardUploadSingle('pan',this)"><button class="btn btnb btnsm" onclick="onboardOpenCamera('pan',false)">📸</button></div>
       ${ob.pan?`<div class="tm ts">Uploaded: ${ob.pan_name||'file'}</div>`:''}
     </div>
     <div class="card"><div class="chdr">4. Previous Employer Offer Letter * <span class="tm" style="font-weight:400">(1–5 files)</span></div>
-      <input type="file" id="obOfferInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px" ${((ob.offer_letters||[]).length>=5)?'disabled':''} onchange="onboardUploadMulti('offer_letters',this)">
+      <div style="display:flex;gap:6px;margin-bottom:8px"><input type="file" id="obOfferInp" accept="image/*,.pdf" class="fi" style="flex:1;padding:8px" ${((ob.offer_letters||[]).length>=5)?'disabled':''} onchange="onboardUploadMulti('offer_letters',this)"><button class="btn btnb btnsm" ${((ob.offer_letters||[]).length>=5)?'disabled':''} onclick="onboardOpenCamera('offer_letters',true)">📸</button></div>
       ${(ob.offer_letters||[]).map((f,i)=>`<div class="lr"><div class="lrl"><div class="lrt">${f.name||'File '+(i+1)}</div></div><button class="btn btnr btnsm" onclick="onboardRemoveMulti('offer_letters',${i})">Remove</button></div>`).join('')}
     </div>
     <div class="card"><div class="chdr">5. Last 3 Months Salary Slips (optional)</div>
-      <input type="file" id="obSlipInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px" ${((ob.salary_slips||[]).length>=3)?'disabled':''} onchange="onboardUploadMulti('salary_slips',this)">
+      <div style="display:flex;gap:6px;margin-bottom:8px"><input type="file" id="obSlipInp" accept="image/*,.pdf" class="fi" style="flex:1;padding:8px" ${((ob.salary_slips||[]).length>=3)?'disabled':''} onchange="onboardUploadMulti('salary_slips',this)"><button class="btn btnb btnsm" ${((ob.salary_slips||[]).length>=3)?'disabled':''} onclick="onboardOpenCamera('salary_slips',true)">📸</button></div>
       ${(ob.salary_slips||[]).map((f,i)=>`<div class="lr"><div class="lrl"><div class="lrt">${f.name||'File '+(i+1)}</div></div><button class="btn btnr btnsm" onclick="onboardRemoveMulti('salary_slips',${i})">Remove</button></div>`).join('')}
     </div>
     <div class="card"><div class="chdr">6. EPF Details *</div>
@@ -2846,6 +2838,67 @@ async function renderOnboard(){
       `:`<p class="tm ts">Waiting for HR/Admin to upload your offer letter.</p>`}
     </div>
   </div>`;
+}
+/* Camera capture via getUserMedia — a fallback that bypasses the OS file-picker
+   entirely. Some embedded WebViews (notably MIT App Inventor's default WebViewer)
+   never implement the native "choose file" dialog, which silently breaks every
+   <input type="file"> on the page. getUserMedia opens a live camera feed directly
+   inside the page instead, so it keeps working even when the file picker doesn't. */
+let _camStream=null,_camField=null,_camIsMulti=false;
+async function onboardOpenCamera(field,isMulti){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    toast('Camera access isn\'t available here — please try the file upload button instead.');
+    return;
+  }
+  _camField=field;_camIsMulti=isMulti;
+  let overlay=document.getElementById('camOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='camOverlay';
+    overlay.style.cssText='position:fixed;inset:0;background:#000;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+    overlay.innerHTML=`<video id="camVideo" autoplay playsinline style="width:100%;max-height:75vh;object-fit:contain;background:#000"></video>
+      <canvas id="camCanvas" style="display:none"></canvas>
+      <div style="display:flex;gap:18px;padding:20px">
+        <button id="camCancelBtn" class="btn btno" style="border-radius:50%;width:52px;height:52px;font-size:18px">✕</button>
+        <button id="camCaptureBtn" class="btn btnp" style="border-radius:50%;width:68px;height:68px;font-size:28px">📸</button>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display='flex';
+  const video=document.getElementById('camVideo');
+  try{
+    _camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    video.srcObject=_camStream;
+  }catch(e){
+    toast('Could not access camera: '+e.message);
+    onboardCloseCamera();
+    return;
+  }
+  document.getElementById('camCaptureBtn').onclick=onboardCaptureCamera;
+  document.getElementById('camCancelBtn').onclick=onboardCloseCamera;
+}
+function onboardCloseCamera(){
+  if(_camStream){_camStream.getTracks().forEach(t=>t.stop());_camStream=null;}
+  const overlay=document.getElementById('camOverlay');
+  if(overlay)overlay.style.display='none';
+}
+async function onboardCaptureCamera(){
+  const video=document.getElementById('camVideo'),canvas=document.getElementById('camCanvas');
+  canvas.width=video.videoWidth||720;canvas.height=video.videoHeight||960;
+  canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+  const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+  onboardCloseCamera();
+  const fname='camera_'+Date.now()+'.jpg';
+  if(_camIsMulti){
+    const ob=await dbGet(`onboarding/${CU.code}`)||{};
+    const arr=ob[_camField]||[];
+    arr.push({data:dataUrl,name:fname});
+    await dbUpd(`onboarding/${CU.code}`,{[_camField]:arr});
+  }else{
+    await dbUpd(`onboarding/${CU.code}`,{[_camField]:dataUrl,[_camField+'_name']:fname});
+  }
+  toast('📸 Captured ✅');
+  renderOnboard();
 }
 async function onboardUploadSingle(field,inp){
   if(!inp.files[0])return;
@@ -2918,9 +2971,10 @@ async function renderOnboardAdmin(){
   for(const[code,e]of Object.entries(emps)){
     const ob=await dbGet(`onboarding/${code}`);
     const complete=onboardIsComplete(ob);
-    rows+=`<div class="lr"><div class="lrl"><div class="lrt">${e.name} <span class="pill ${e.hire_status==='new'?'pa':'pgr'}" style="font-size:9px">${e.hire_status==='new'?'New':'Existing'}</span></div><div class="lrs">${code}</div></div><div class="lrr"><span class="pill ${complete?'pg':'pa'}">${complete?'Complete':'Pending'}</span><button class="btn btno btnsm mt8" onclick="renderOnboardAdminDetail('${code}')">Manage</button></div></div>`;
+    const released=ob&&ob.released;
+    rows+=`<div class="lr"><div class="lrl"><div class="lrt">${e.name} ${released?'<span class="pill pb" style="font-size:9px">Released</span>':''}</div><div class="lrs">${code}</div></div><div class="lrr"><span class="pill ${complete?'pg':'pa'}">${complete?'Complete':'Pending'}</span><button class="btn btno btnsm mt8" onclick="renderOnboardAdminDetail('${code}')">Manage</button></div></div>`;
   }
-  el.innerHTML=`<div class="padt"><p class="tm ts mb12">Manage each employee's onboarding — upload their offer letter and review submitted documents.</p><div class="card">${rows}</div></div>`;
+  el.innerHTML=`<div class="padt"><p class="tm ts mb12">Manage each employee's onboarding — upload their offer letter, review documents, or release app access early.</p><div class="card">${rows}</div></div>`;
 }
 async function renderOnboardAdminDetail(code){
   const el=document.getElementById('onboardBody');
@@ -2938,6 +2992,10 @@ async function renderOnboardAdminDetail(code){
       <div class="lr"><div class="lrl"><div class="lrt">EPF</div></div><div class="lrr ts">${o.epf_number||o.uan||'—'}</div></div>
       <div class="lr"><div class="lrl"><div class="lrt">Bank</div></div><div class="lrr ts">${o.bank_account?`${o.bank_account} · ${o.ifsc}`:'—'}</div></div>
     </div>
+    <div class="card"><div class="chdr">App Access Before Onboarding is Complete</div>
+      <p class="tm ts mb8">${o.released?'App access has been released — this person can use the app even though onboarding isn\'t finished yet. They still need to complete it eventually.':'This person is currently blocked from the rest of the app until onboarding is complete.'}</p>
+      ${o.released?`<button class="btn btnr btnbl" onclick="onboardSetReleased('${code}',false)">🔒 Revoke Early Access</button>`:`<button class="btn btng btnbl" onclick="onboardSetReleased('${code}',true)">🔓 Release App Access</button>`}
+    </div>
     <div class="card"><div class="chdr">Upload Offer Letter for ${e?.name||code}</div>
       <input type="file" id="obAdminOfferInp" accept="image/*,.pdf" class="fi" style="padding:8px;margin-bottom:8px">
       <button class="btn btnp btnbl" onclick="onboardAdminUploadOffer('${code}')">⬆️ Upload Offer Letter</button>
@@ -2950,6 +3008,14 @@ async function onboardAdminViewFile(code,field){
   if(!ob?.[field])return;
   try{const res=await fetch(ob[field]);const blob=await res.blob();triggerBlobDownload(blob,ob[field+'_name']||field);}
   catch(e){toast('Could not open file');}
+}
+async function onboardSetReleased(code,released){
+  if(!cAdmin(CU.role)){toast('Admin only');return;}
+  await dbUpd(`onboarding/${code}`,{released});
+  await dbPush('audit_log',{action:released?'ONBOARD_RELEASE':'ONBOARD_REVOKE',actor:CU.code,target:code,ts:Date.now()});
+  if(released)await dbPush(`inbox/${code}`,{msg:'Admin has released app access for you — you can use the app now, but please still complete onboarding when you can.',from:CU.code,ts:Date.now(),read:false});
+  toast(released?'🔓 App access released':'🔒 Early access revoked');
+  renderOnboardAdminDetail(code);
 }
 async function onboardAdminUploadOffer(code){
   const inp=document.getElementById('obAdminOfferInp');
