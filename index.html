@@ -250,7 +250,7 @@ textarea.fi{resize:vertical;min-height:72px}
       <div class="fg"><label class="fl">Password</label><input id="lpass" name="password" type="password" class="fi" placeholder="Your password" autocomplete="current-password"></div>
       <div class="fg" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
         <input id="lremember" type="checkbox" style="width:16px;height:16px;accent-color:var(--pink)" checked>
-        <label for="lremember" class="ts tm" style="cursor:pointer">Remember me on this device</label>
+        <label for="lremember" class="ts tm" style="cursor:pointer">Remember me for 3 hours</label>
       </div>
       <button class="btn btnp" id="lbtn" type="submit">Sign In</button>
     </form>
@@ -810,7 +810,8 @@ const EMAILJS_TEMPLATE_ID="";
 const EMAIL_NOTIFS_ENABLED=true;
 
 // "Remember me" session length — sessions resume automatically for this long
-const REMEMBER_MS=100*365*24*60*60*1000; // effectively forever — stays signed in until the person logs out
+const REMEMBER_MS=3*60*60*1000; // 3 hours — normal "remember me" session length
+const RESET_REMEMBER_MS=90*24*60*60*1000; // ~3 months — used for the first login right after a password reset
 
 /* ══════════════════════════════════════════ CONSTANTS */
 const SHIFTS={
@@ -1243,7 +1244,13 @@ async function doLogin(){
     CU={...e,code:eid};
     if(document.getElementById('lremember').checked){
       _ls.set('ka_lastcode',eid);
-      _ls.set('ka_session',JSON.stringify({code:eid,exp:Date.now()+REMEMBER_MS}));
+      // If this employee's password was just reset (by admin or via a forgot-password
+      // request), give them a longer 3-month remembered session as a one-time grace
+      // period, instead of the usual 3 hours. The flag clears after this first use.
+      const justReset=!!e.password_reset_at;
+      const sessionMs=justReset?RESET_REMEMBER_MS:REMEMBER_MS;
+      _ls.set('ka_session',JSON.stringify({code:eid,exp:Date.now()+sessionMs}));
+      if(justReset)await dbUpd(`employees/${eid}`,{password_reset_at:null});
     }else{
       _ls.del('ka_lastcode');
       _ls.del('ka_session');
@@ -1269,6 +1276,15 @@ async function attemptSessionResume(){
   try{
     const emp=await dbGet(`employees/${sess.code}`);
     if(!emp||emp.status==='inactive')return false;
+    // While onboarding is incomplete (and not released early by admin), the remembered
+    // session is intentionally not honoured — exiting mid-onboarding requires signing
+    // back in with the password each time, until onboarding is finished.
+    if(emp.role!=='admin'){
+      const ob=await dbGet(`onboarding/${sess.code}`);
+      const complete=onboardIsComplete(ob);
+      const released=ob&&ob.released;
+      if(!complete&&!released){_ls.del('ka_session');return false;}
+    }
     CU={...emp,code:sess.code};
     const sd=await dbGet('stores');
     stores=sd?Object.entries(sd).map(([id,v])=>({...v,id})):DEFAULT_STORES;
@@ -2040,15 +2056,26 @@ async function generateSlipPdfBlob(){
     // blank in the captured PDF/download.
     const imgs=area.querySelectorAll('img');
     await Promise.all(Array.from(imgs).map(img=>img.complete?Promise.resolve():new Promise(res=>{img.onload=res;img.onerror=res;})));
-    const canvas=await html2canvas(area,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
-    const imgData=canvas.toDataURL('image/png');
-    const {jsPDF}=window.jspdf;
-    const pdf=new jsPDF('p','mm','a4');
-    const pw=pdf.internal.pageSize.getWidth();
-    const iw=canvas.width,ih=canvas.height,ratio=pw/iw;
-    const imgH=ih*ratio;
-    pdf.addImage(imgData,'PNG',0,0,pw,imgH);
-    return pdf.output('blob');
+    // scale:1.5 (not 2) + JPEG (not PNG) + jsPDF's own compression together cut the
+    // file size drastically — a scale:2 PNG slip could balloon past 10MB; this
+    // combination keeps it comfortably under ~2MB while staying sharp enough to read.
+    const buildPdf=async(scale,quality)=>{
+      const canvas=await html2canvas(area,{scale,useCORS:true,backgroundColor:'#ffffff'});
+      const imgData=canvas.toDataURL('image/jpeg',quality);
+      const {jsPDF}=window.jspdf;
+      const pdf=new jsPDF({unit:'mm',format:'a4',compress:true});
+      const pw=pdf.internal.pageSize.getWidth();
+      const iw=canvas.width,ih=canvas.height,ratio=pw/iw;
+      const imgH=ih*ratio;
+      pdf.addImage(imgData,'JPEG',0,0,pw,imgH,undefined,'FAST');
+      return pdf.output('blob');
+    };
+    let blob=await buildPdf(1.5,0.75);
+    // Safety net: if it's still unexpectedly large (e.g. a very tall slip), compress harder once more.
+    if(blob.size>2*1024*1024){
+      blob=await buildPdf(1.2,0.55);
+    }
+    return blob;
   }catch(e){console.error('PDF error',e);toast('PDF generation failed: '+e.message);return null;}
 }
 async function dlSlipPdf(){
@@ -2064,7 +2091,7 @@ async function genAllSlips(){const now=new Date(),mo=now.getMonth()+1,yr=now.get
 async function renderProfile(){
   const el=document.getElementById('pgm');
   try{
-    const [eD,rstD,slD,emD]=await Promise.all([dbGet(`employees/${CU.code}`),dbGet(`rosters/${CU.code}`),dbGet(`salary_slips/${CU.code}`),dbGet('employees')]);
+    const [eD,rstD,slD,emD,obD]=await Promise.all([dbGet(`employees/${CU.code}`),dbGet(`rosters/${CU.code}`),dbGet(`salary_slips/${CU.code}`),dbGet('employees'),dbGet(`onboarding/${CU.code}`)]);
     const approver=computeApprover(emD);
     const e=eD||CU;const ms=stores.find(s=>s.id===e.assigned_store);
     let rH=`<div class="es" style="padding:16px"><p class="tm ts">No roster assigned</p></div>`;
@@ -2075,7 +2102,8 @@ async function renderProfile(){
       slH=`<div class="chdr">Month-wise Salary Slips</div>`+
         (slEntries.length?slEntries.slice(0,12).map(([k,s])=>`<div class="lr"><div class="lrl"><div class="lrt">${MONS[(s.month||1)-1]} ${s.year||''}</div><div class="lrs">Net ₹${parseInt(s.net||0).toLocaleString('en-IN')} · ${s.generated_on||''}</div></div><div class="lrr" style="gap:5px;display:flex"><button class="btn btnp btnsm" onclick="showSlip('${CU.code}',${s.month},${s.year})">View</button><button class="btn btno btnsm" onclick="showSlip('${CU.code}',${s.month},${s.year}).then(dlSlipPdf)">PDF</button></div></div>`).join(''):`<div class="es" style="padding:16px"><p class="tm ts">No slips generated yet</p></div>`);
     }
-    const avatar=e.photo?`<img src="${e.photo}" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid var(--pink)">` :`<div style="width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center">${ini(e.name)}</div>`;
+    const avatarSrc=e.photo||(obD&&obD.photo)||'';
+    const avatar=avatarSrc?`<img src="${avatarSrc}" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid var(--pink)">` :`<div style="width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center">${ini(e.name)}</div>`;
     el.innerHTML=`<div class="padt fade">
       <div class="card tc" style="padding:24px 16px">
         <div style="margin:0 auto 12px;width:68px">${avatar}</div>
@@ -2104,6 +2132,19 @@ async function renderProfile(){
         <button class="btn btno btnbl mt8" onclick="enablePushNotifs()">🔔 Enable Notifications</button>
         <div class="sbrow mt8"><span class="ts">Mobile ⇄ Desktop Sync</span><span id="meSyncLbl" class="pill ${db?'pg':'pa'}" style="font-size:9.5px">${db?'● Live':'● Local Only'}</span></div>
         <p class="tm ts mt8">${db?'Your data is synced across all devices signed in to this account.':'This device is not connected to cloud sync — data stays on this device only.'}</p>
+      </div>
+      <div class="card"><div class="chdr">My Onboarding Documents</div>
+        ${obD?`
+        <div class="lr"><div class="lrl"><div class="lrt">Passport Photo</div></div><div class="lrr">${obD.photo?`<button class="btn btno btnsm" onclick="onboardAdminViewFile('${CU.code}','photo')">View</button>`:'<span class="pill pgr">Not uploaded</span>'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Aadhaar Card</div></div><div class="lrr">${obD.aadhar?`<button class="btn btno btnsm" onclick="onboardAdminViewFile('${CU.code}','aadhar')">View</button>`:'<span class="pill pgr">Not uploaded</span>'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">PAN Card</div></div><div class="lrr">${obD.pan?`<button class="btn btno btnsm" onclick="onboardAdminViewFile('${CU.code}','pan')">View</button>`:'<span class="pill pgr">Not uploaded</span>'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Previous Offer Letter(s)</div></div><div class="lrr">${(obD.offer_letters||[]).length} file(s)</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Last 3 Months Salary Slips</div></div><div class="lrr">${(obD.salary_slips||[]).length} file(s)</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">EPF Number / UAN</div></div><div class="lrr ts">${obD.epf_number||obD.uan||'—'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Bank Account</div></div><div class="lrr ts">${obD.bank_account?`${obD.bank_account} · ${obD.ifsc}`:'—'}</div></div>
+        <div class="lr"><div class="lrl"><div class="lrt">Offer Letter Status</div></div><div class="lrr">${obD.offer_accepted?`<span class="pill pg">Accepted ${fD(obD.offer_accepted_on)}</span>`:'<span class="pill pa">Pending</span>'}</div></div>
+        <button class="btn btno btnbl mt8" onclick="openOnboard()">🧾 Open Full Onboarding</button>
+        `:`<div class="es" style="padding:16px"><p class="tm ts">No onboarding documents uploaded yet</p></div><button class="btn btnp btnbl" onclick="openOnboard()">🧾 Start Onboarding</button>`}
       </div>
       <div id="mySeparationCard"></div>
       ${cAdmin(CU.role)?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><button class="btn btnp btnbl" onclick="openFP('fpemps');loadEmpList()">👥 Manage Employees</button><button class="btn btno btnbl" onclick="openFP('fpstores');renderStList()">📍 Manage Stores</button><button class="btn btno btnbl" onclick="openFP('fpbulk')">📤 Bulk Upload</button><button class="btn btno btnbl" onclick="openHolidayMgmt()">🎉 Manage Holidays</button><button class="btn btno btnbl" onclick="openAdminLeaveAdd()">📅 Add Leave (Correction)</button><button class="btn btno btnbl" onclick="openHistSlipAdd()">🗂 Add Old Salary Slip</button><button class="btn btnb btnbl" onclick="openOnboard()">🧾 Hiring &amp; Onboarding (HR)</button><button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button><button class="btn btnw btnbl" onclick="openSeparationReview()">🚪 Separation Review</button><button class="btn btno btnbl" onclick="openAudit()">📋 View Audit Log</button></div>`:approver.isApprover?`<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${cMgr(CU.role)?`<button class="btn btnb btnbl" onclick="openTeamAtt()">📊 Team Attendance</button>`:''}<button class="btn btnw btnbl" onclick="openRegReview()">📋 Regularization Review</button><button class="btn btnw btnbl" onclick="openSeparationReview()">🚪 Separation Review</button></div>`:''}
@@ -2475,7 +2516,7 @@ async function saveEmployee(){
   const data={name,mobile:document.getElementById('em').value.trim(),email:document.getElementById('ee').value.trim(),notify_email:document.getElementById('enotify').value.trim(),designation:document.getElementById('ed').value.trim(),department:document.getElementById('ept').value.trim(),assigned_store:document.getElementById('est').value,reporting_manager:document.getElementById('ermgr').value,join_date:document.getElementById('edoj').value,dob:document.getElementById('edob').value,salary:sal,role,status:'active',shift:document.getElementById('eshift').value,week_off:parseInt(document.getElementById('ewoff').value)||0,l1_manager:document.getElementById('el1').value,l2_manager:document.getElementById('el2').value,l3_manager:document.getElementById('el3').value,notice_period_days:parseInt(document.getElementById('enoticedays').value)||0,hire_status:document.getElementById('ehire').value,pan:document.getElementById('epan').value.trim().toUpperCase(),pf_number:document.getElementById('epfno').value.trim(),uan:document.getElementById('euan').value.trim(),bank_name:document.getElementById('ebankname').value.trim(),bank_account:document.getElementById('ebankacct').value.trim(),ifsc:document.getElementById('eifsc').value.trim().toUpperCase(),code,device_bind_enabled:deviceBindEnabled};
   if(!deviceBindEnabled){data.bound_device_id='';data.bound_device_label='';data.bound_device_set_on='';}
   if(photo)data.photo=photo;
-  if(pass)data.password_hash=hp(pass);
+  if(pass){data.password_hash=hp(pass);if(eEmpId)data.password_reset_at=Date.now();}
   const btn=document.getElementById('sebtn');btn.innerHTML='<div class="spin"></div> Saving…';btn.disabled=true;
   try{
     if(eEmpId)await dbUpd(`employees/${code}`,data);else await dbSet(`employees/${code}`,data);
